@@ -90,6 +90,8 @@ public class MainActivity extends AppCompatActivity
     private ProgressBar mProgressBar;
     private EditText mMessageEditText;
     private ImageButton mLocationButton;
+    private ImageButton mCameraButton;
+
 
     // Firebase instance variables
     private FirebaseAuth mAuth;
@@ -99,6 +101,7 @@ public class MainActivity extends AppCompatActivity
             mFirebaseAdapter;
     private ImageButton mImageButton;
     private static final int REQUEST_PICK_IMAGE = 1;
+    private static final int REQUEST_CAPTURE_IMAGE = 2;
     private double MAX_LINEAR_DIMENSION = 500.0;
 
     @Override
@@ -197,7 +200,17 @@ public class MainActivity extends AppCompatActivity
                 loadmap();
             }
         });
-        
+
+        // camera
+        mCameraButton = (ImageButton) findViewById(R.id.cameraButton);
+        mCameraButton.setOnClickListener( new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                captureImage();
+            }
+        });
+
     }
 
     private void loadmap() {
@@ -244,6 +257,12 @@ public class MainActivity extends AppCompatActivity
         // Filter to show only images, using the image MIME data type.
         intent.setType("image/*");
         startActivityForResult(intent, REQUEST_PICK_IMAGE);
+    }
+
+    private void captureImage() {
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        intent.putExtra(MediaStore.EXTRA_VIDEO_QUALITY, 2);
+        startActivityForResult(intent, REQUEST_CAPTURE_IMAGE);
     }
 
     @Override
@@ -316,6 +335,7 @@ public class MainActivity extends AppCompatActivity
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         Log.d(TAG, "onActivityResult: request=" + requestCode + ", result=" + resultCode);
+
         if (requestCode == REQUEST_PICK_IMAGE && resultCode == Activity.RESULT_OK) {
             // Process selected image here
             // The document selected by the user won't be returned in the intent.
@@ -338,6 +358,19 @@ public class MainActivity extends AppCompatActivity
                 Log.e(TAG, "Cannot get image for uploading");
             }
         }
+
+        // camera
+        if (requestCode == REQUEST_CAPTURE_IMAGE && resultCode == Activity.RESULT_OK) {
+            // process captured image
+            if (data != null) {
+                Bitmap bitmap = (Bitmap) data.getExtras().get("data");
+                Uri uri = savePhotoImage(this, bitmap);
+                createImageMessage(uri);
+            } else {
+                Log.e(TAG, "Cannot capture an image");
+            }
+        }
+
     }
 
     private void createImageMessage(Uri uri) {
