@@ -15,6 +15,7 @@
  */
 package edu.sfsu.csc780.chathub.ui;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -27,6 +28,7 @@ import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
@@ -102,6 +104,7 @@ public class MainActivity extends AppCompatActivity
     private ImageButton mImageButton;
     private static final int REQUEST_PICK_IMAGE = 1;
     private static final int REQUEST_CAPTURE_IMAGE = 2;
+    private static final int CAMERA_REQUEST_CODE = 200;
     private double MAX_LINEAR_DIMENSION = 500.0;
 
     @Override
@@ -260,9 +263,14 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void captureImage() {
-        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        intent.putExtra(MediaStore.EXTRA_VIDEO_QUALITY, 2);
-        startActivityForResult(intent, REQUEST_CAPTURE_IMAGE);
+        if ( (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED ) ) {
+            Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+            intent.putExtra(MediaStore.EXTRA_VIDEO_QUALITY, 2);
+            startActivityForResult(intent, REQUEST_CAPTURE_IMAGE);
+        } else {
+            String[] permissionRequested = {Manifest.permission.CAMERA};
+            ActivityCompat.requestPermissions(this, permissionRequested, CAMERA_REQUEST_CODE);
+        }
     }
 
     @Override
@@ -326,8 +334,16 @@ public class MainActivity extends AppCompatActivity
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
         boolean isGranted = (grantResults.length > 0
                 && grantResults[0] == PackageManager.PERMISSION_GRANTED);
+
         if (isGranted && requestCode == LocationUtils.REQUEST_CODE) {
             LocationUtils.startLocationUpdates(this);
+        }
+
+        // camera
+        if (isGranted && requestCode == CAMERA_REQUEST_CODE) {
+            captureImage();
+        } else {
+            Toast.makeText(this, "Camera need permission to open", Toast.LENGTH_LONG).show();
         }
     }
 
