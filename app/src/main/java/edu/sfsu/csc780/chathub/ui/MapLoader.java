@@ -13,6 +13,8 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 
+import edu.sfsu.csc780.chathub.R;
+
 public class MapLoader extends AsyncTaskLoader<Bitmap> {
 
     private static final String LOG_TAG = MapLoader.class.getSimpleName();
@@ -38,6 +40,7 @@ public class MapLoader extends AsyncTaskLoader<Bitmap> {
         urlBuilder.append(lat);
         urlBuilder.append(",");
         urlBuilder.append(lon);
+        urlBuilder.append("&key=AIzaSyC1-49pPnMsUT9CNaxb_wKoFL4UMRMpM0g");
         Log.d(LOG_TAG, "map url:" + urlBuilder.toString());
 
         Bitmap bmp = null;

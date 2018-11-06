@@ -65,6 +65,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Map;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 import edu.sfsu.csc780.chathub.R;

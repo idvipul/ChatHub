@@ -16,7 +16,6 @@ public class LocationUtils {
     public static final int REQUEST_CODE = 100;
     private static final long MIN_TIME = 60000; // 60000 milliseconds = 60 seconds (1 min)
     private static final float MIN_DISTANCE = 10; // 10 meters
-
     private static String FINE_LOCATION = Manifest.permission.ACCESS_FINE_LOCATION;
     private static String COARSE_LOCATION = Manifest.permission.ACCESS_COARSE_LOCATION;
     private static int GRANTED = PackageManager.PERMISSION_GRANTED;
