@@ -26,6 +26,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
+import android.speech.RecognizerIntent;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
@@ -64,7 +65,9 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.Locale;
 import java.util.Map;
 
 import de.hdodenhof.circleimageview.CircleImageView;
@@ -94,7 +97,7 @@ public class MainActivity extends AppCompatActivity
     private EditText mMessageEditText;
     private ImageButton mLocationButton;
     private ImageButton mCameraButton;
-
+    private ImageButton mMicrophoneButton;
 
     // Firebase instance variables
     private FirebaseAuth mAuth;
@@ -105,7 +108,8 @@ public class MainActivity extends AppCompatActivity
     private ImageButton mImageButton;
     private static final int REQUEST_PICK_IMAGE = 1;
     private static final int REQUEST_CAPTURE_IMAGE = 2;
-    private static final int CAMERA_REQUEST_CODE = 200;
+    private static final int REQUEST_CAMERA_PERMISSION = 3;
+    private static final int REQUEST_MICROPHONE_PERMISSION = 4;
     private double MAX_LINEAR_DIMENSION = 500.0;
 
     @Override
@@ -215,7 +219,18 @@ public class MainActivity extends AppCompatActivity
             }
         });
 
+        // microphone
+        mMicrophoneButton = (ImageButton) findViewById(R.id.microphoneButton);
+        mMicrophoneButton.setOnClickListener( new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                getSpeechInput();
+            }
+        });
+
     }
+
 
     private void loadmap() {
         mProgressBar.setVisibility(ProgressBar.VISIBLE);
@@ -263,6 +278,7 @@ public class MainActivity extends AppCompatActivity
         startActivityForResult(intent, REQUEST_PICK_IMAGE);
     }
 
+    // camera
     private void captureImage() {
         if ( (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED ) ) {
             Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
@@ -270,7 +286,28 @@ public class MainActivity extends AppCompatActivity
             startActivityForResult(intent, REQUEST_CAPTURE_IMAGE);
         } else {
             String[] permissionRequested = {Manifest.permission.CAMERA};
-            ActivityCompat.requestPermissions(this, permissionRequested, CAMERA_REQUEST_CODE);
+            ActivityCompat.requestPermissions(this, permissionRequested, REQUEST_CAMERA_PERMISSION);
+        }
+    }
+
+    // microphone
+    private void getSpeechInput() {
+
+        if ( (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED ) ) {
+            // prompt the user for speech and send it through a speech recognizer
+            Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
+
+            if (intent.resolveActivity(getPackageManager()) != null) {
+                // result returned via activity results in the form of intent
+                startActivityForResult(intent, REQUEST_MICROPHONE_PERMISSION);
+            } else {
+                Toast.makeText(this, "Your Device does not support Speech Input", Toast.LENGTH_LONG).show();
+            }
+        } else {
+            String[] permissionRequested = {Manifest.permission.RECORD_AUDIO};
+            ActivityCompat.requestPermissions(this, permissionRequested, REQUEST_MICROPHONE_PERMISSION);
         }
     }
 
@@ -333,6 +370,7 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+
         boolean isGranted = (grantResults.length > 0
                 && grantResults[0] == PackageManager.PERMISSION_GRANTED);
 
@@ -341,11 +379,18 @@ public class MainActivity extends AppCompatActivity
         }
 
         // camera
-        if (isGranted && requestCode == CAMERA_REQUEST_CODE) {
+        if (isGranted && requestCode == REQUEST_CAMERA_PERMISSION) {
             captureImage();
         } else {
-            Toast.makeText(this, "Camera need permission to open", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Camera needs permission to open", Toast.LENGTH_LONG).show();
         }
+
+//        // microphone
+//        if (isGranted && requestCode == REQUEST_MICROPHONE_PERMISSION) {
+//            captureImage();
+//        } else {
+//            Toast.makeText(this, "Microphone needs permission to open", Toast.LENGTH_LONG).show();
+//        }
     }
 
     @Override
@@ -386,6 +431,17 @@ public class MainActivity extends AppCompatActivity
             } else {
                 Log.e(TAG, "Cannot capture an image");
             }
+        }
+        // microphone
+        if (requestCode == REQUEST_MICROPHONE_PERMISSION && resultCode == Activity.RESULT_OK) {
+
+            // get audio & store it in ArrayList of Strings
+            ArrayList<String> audio = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+
+            ChatMessage text = new ChatMessage(audio.get(0), mUsername, mPhotoUrl);
+
+            // send audio as a text message
+            MessageUtil.send(text);
         }
 
     }
