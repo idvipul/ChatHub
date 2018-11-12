@@ -1,6 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
       xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/day_night_mode"
+        android:title="@string/day_night_mode"
+        android:icon=""
+        app:showAsAction="always"/>
+
+    <item
+        android:id="@+id/change_mode_menu"
+        android:title="@string/change_mode"
+        android:icon="?attr/changeModeStyle"
+        app:showAsAction="always"/>
+
     <item
         android:id="@+id/sign_out_menu"
         android:title="@string/sign_out"

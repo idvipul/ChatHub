@@ -22,7 +22,8 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_alignParentStart="true"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:layout_alignParentLeft="true">
 
         <EditText
             android:id="@+id/messageEditText"
@@ -43,7 +44,7 @@
                 android:layout_gravity="left"
                 android:background="@drawable/button_ripple"
                 android:padding="16dp"
-                android:src="@drawable/ic_my_mic_black" />
+                android:src="?attr/micButton" />
 
             <View
                 android:layout_width="0dp"
@@ -57,7 +58,7 @@
                 android:layout_gravity="center"
                 android:background="@drawable/button_ripple"
                 android:padding="16dp"
-                android:src="@drawable/ic_my_camera_black_24px" />
+                android:src="?attr/cameraButton" />
 
             <ImageButton
                 android:id="@+id/locationButton"
@@ -66,7 +67,7 @@
                 android:layout_gravity="center"
                 android:background="@drawable/button_ripple"
                 android:padding="16dp"
-                android:src="@drawable/ic_my_location_black_24px" />
+                android:src="?attr/locationButton" />
 
             <ImageButton
                 android:id="@+id/shareImageButton"
@@ -75,13 +76,13 @@
                 android:layout_gravity="center"
                 android:background="@drawable/button_ripple"
                 android:padding="16dp"
-                android:src="@drawable/ic_image_black_24px" />
+                android:src="?attr/imageButton" />
 
             <android.support.design.widget.FloatingActionButton
                 android:id="@+id/sendButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:src="@drawable/ic_send_black_24" />
+                android:src="?attr/sendButton" />
 
         </LinearLayout>
     </LinearLayout>

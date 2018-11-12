@@ -209,7 +209,7 @@ public class MainActivity extends AppCompatActivity
             }
         });
 
-        // camera
+        // camera -- referred some YouTube tutorials
         mCameraButton = (ImageButton) findViewById(R.id.cameraButton);
         mCameraButton.setOnClickListener( new View.OnClickListener() {
 
@@ -219,7 +219,7 @@ public class MainActivity extends AppCompatActivity
             }
         });
 
-        // microphone
+        // microphone -- referred some YouTube tutorials
         mMicrophoneButton = (ImageButton) findViewById(R.id.microphoneButton);
         mMicrophoneButton.setOnClickListener( new View.OnClickListener() {
 
