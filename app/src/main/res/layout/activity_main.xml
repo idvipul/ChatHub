@@ -43,7 +43,7 @@
                 android:layout_gravity="left"
                 android:background="@drawable/button_ripple"
                 android:padding="16dp"
-                android:src="@drawable/ic_my_mic" />
+                android:src="@drawable/ic_my_mic_black" />
 
             <View
                 android:layout_width="0dp"
@@ -57,7 +57,7 @@
                 android:layout_gravity="center"
                 android:background="@drawable/button_ripple"
                 android:padding="16dp"
-                android:src="@drawable/ic_my_camera" />
+                android:src="@drawable/ic_my_camera_black_24px" />
 
             <ImageButton
                 android:id="@+id/locationButton"
@@ -66,7 +66,7 @@
                 android:layout_gravity="center"
                 android:background="@drawable/button_ripple"
                 android:padding="16dp"
-                android:src="@drawable/ic_my_location_24px" />
+                android:src="@drawable/ic_my_location_black_24px" />
 
             <ImageButton
                 android:id="@+id/shareImageButton"

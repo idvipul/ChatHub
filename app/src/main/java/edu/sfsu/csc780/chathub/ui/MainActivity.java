@@ -385,12 +385,12 @@ public class MainActivity extends AppCompatActivity
             Toast.makeText(this, "Camera needs permission to open", Toast.LENGTH_LONG).show();
         }
 
-//        // microphone
-//        if (isGranted && requestCode == REQUEST_MICROPHONE_PERMISSION) {
-//            captureImage();
-//        } else {
-//            Toast.makeText(this, "Microphone needs permission to open", Toast.LENGTH_LONG).show();
-//        }
+        // microphone
+        if (isGranted && requestCode == REQUEST_MICROPHONE_PERMISSION) {
+            getSpeechInput();
+        } else {
+            Toast.makeText(this, "Microphone needs permission to open", Toast.LENGTH_LONG).show();
+        }
     }
 
     @Override
@@ -432,6 +432,7 @@ public class MainActivity extends AppCompatActivity
                 Log.e(TAG, "Cannot capture an image");
             }
         }
+
         // microphone
         if (requestCode == REQUEST_MICROPHONE_PERMISSION && resultCode == Activity.RESULT_OK) {
 
@@ -442,6 +443,8 @@ public class MainActivity extends AppCompatActivity
 
             // send audio as a text message
             MessageUtil.send(text);
+        }else {
+            Log.e(TAG, "Cannot get an audio");
         }
 
     }
