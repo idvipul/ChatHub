@@ -17,7 +17,7 @@
         <item name="locationButton">@drawable/ic_my_location_black_24px</item>
         <item name="imageButton">@drawable/ic_image_black_24px</item>
         <item name="sendButton">@drawable/ic_send_black_24</item>
-
+        <item name="android:windowAnimationStyle">@style/WindowAnimationTransition</item>
     </style>
 
     <!-- Night Mode(Dark Theme) -->
@@ -37,11 +37,16 @@
         <item name="locationButton">@drawable/ic_my_location_white_24px</item>
         <item name="imageButton">@drawable/ic_image_white_24px</item>
         <item name="sendButton">@drawable/ic_send_white_24</item>
-
+        <item name="android:windowAnimationStyle">@style/WindowAnimationTransition</item>
     </style>
 
     <style name="ChatHubButtonStyle" parent="Widget.AppCompat.Button">
         <item name="android:textColor">@color/colorTitle</item>
-
     </style>
+
+    <style name="WindowAnimationTransition">
+        <item name="android:windowEnterAnimation">@android:anim/fade_in</item>
+        <item name="android:windowExitAnimation">@android:anim/fade_out</item>
+    </style>
+
 </resources>

@@ -367,7 +367,7 @@ public class MainActivity extends AppCompatActivity
 
      // day/night mode -- referred YouTube tutorials
      private void changeMode() {
-        if (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_NO || AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_AUTO ) {
+        if (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_NO || AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_AUTO || AppCompatDelegate.getDefaultNightMode() == -1 ) {
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
             Toast.makeText(this, "Changed to Night Mode", Toast.LENGTH_SHORT).show();
         } else {
