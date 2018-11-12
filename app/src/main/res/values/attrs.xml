@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <declare-styleable name="ds" >
-        <attr name="backgroundColor" format="color" />
         <attr name="dayNightModeButton" format="color" />
         <attr name="micButton" format="color" />
         <attr name="cameraButton" format="color" />

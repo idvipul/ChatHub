@@ -33,6 +33,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.app.AppCompatDelegate;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
@@ -114,8 +115,15 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        if (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_YES) {
+            setTheme(R.style.AppThemeNightMode);
+        } else {
+            setTheme(R.style.AppThemeDayMode);
+        }
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         // Set default username is anonymous.
         mUsername = ANONYMOUS;
@@ -209,7 +217,7 @@ public class MainActivity extends AppCompatActivity
             }
         });
 
-        // camera -- referred some YouTube tutorials
+        // camera -- referred YouTube tutorials
         mCameraButton = (ImageButton) findViewById(R.id.cameraButton);
         mCameraButton.setOnClickListener( new View.OnClickListener() {
 
@@ -219,7 +227,7 @@ public class MainActivity extends AppCompatActivity
             }
         });
 
-        // microphone -- referred some YouTube tutorials
+        // microphone -- referred YouTube tutorials
         mMicrophoneButton = (ImageButton) findViewById(R.id.microphoneButton);
         mMicrophoneButton.setOnClickListener( new View.OnClickListener() {
 
@@ -230,7 +238,6 @@ public class MainActivity extends AppCompatActivity
         });
 
     }
-
 
     private void loadmap() {
         mProgressBar.setVisibility(ProgressBar.VISIBLE);
@@ -303,7 +310,7 @@ public class MainActivity extends AppCompatActivity
                 // result returned via activity results in the form of intent
                 startActivityForResult(intent, REQUEST_MICROPHONE_PERMISSION);
             } else {
-                Toast.makeText(this, "Your Device does not support Speech Input", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Your Device does not support Speech Input", Toast.LENGTH_SHORT).show();
             }
         } else {
             String[] permissionRequested = {Manifest.permission.RECORD_AUDIO};
@@ -350,9 +357,26 @@ public class MainActivity extends AppCompatActivity
                 mUsername = ANONYMOUS;
                 startActivity(new Intent(this, SignInActivity.class));
                 return true;
+            case R.id.day_night_mode:
+                changeMode();
+                return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
+    }
+
+     // day/night mode -- referred YouTube tutorials
+     private void changeMode() {
+        if (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_NO || AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_AUTO ) {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+            Toast.makeText(this, "Changed to Night Mode", Toast.LENGTH_SHORT).show();
+        } else {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+            Toast.makeText(this, "Changed to Day Mode", Toast.LENGTH_SHORT).show();
+        }
+        Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+        startActivity(intent);
+        finish();
     }
 
     @Override
@@ -382,14 +406,14 @@ public class MainActivity extends AppCompatActivity
         if (isGranted && requestCode == REQUEST_CAMERA_PERMISSION) {
             captureImage();
         } else {
-            Toast.makeText(this, "Camera needs permission to open", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Camera needs permission to open", Toast.LENGTH_SHORT).show();
         }
 
         // microphone
         if (isGranted && requestCode == REQUEST_MICROPHONE_PERMISSION) {
             getSpeechInput();
         } else {
-            Toast.makeText(this, "Microphone needs permission to open", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Microphone needs permission to open", Toast.LENGTH_SHORT).show();
         }
     }
 
