@@ -21,7 +21,10 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.preference.PreferenceManager;
@@ -46,7 +49,9 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.PopupMenu;
 import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -68,6 +73,7 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -107,10 +113,13 @@ public class MainActivity extends AppCompatActivity
     private FirebaseRecyclerAdapter<ChatMessage, MessageUtil.MessageViewHolder>
             mFirebaseAdapter;
     private ImageButton mImageButton;
+    private RelativeLayout mRelativeLayout;
+
     private static final int REQUEST_PICK_IMAGE = 1;
     private static final int REQUEST_CAPTURE_IMAGE = 2;
     private static final int REQUEST_CAMERA_PERMISSION = 3;
     private static final int REQUEST_MICROPHONE_PERMISSION = 4;
+    private static final int REQUEST_CHANGE_WALLPAPER = 5;
     private double MAX_LINEAR_DIMENSION = 500.0;
 
     @Override
@@ -123,6 +132,7 @@ public class MainActivity extends AppCompatActivity
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        mRelativeLayout = (RelativeLayout) findViewById(R.id.setWallpaper);
 
         mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         // Set default username is anonymous.
@@ -140,6 +150,18 @@ public class MainActivity extends AppCompatActivity
                 mPhotoUrl = mUser.getPhotoUrl().toString();
             }
         }
+
+        // get wallpaper path
+        String wallpaperPath = mSharedPreferences.getString("wallpaperPath",null);
+
+        if (wallpaperPath != null) {
+            Uri uri = Uri.parse(wallpaperPath);
+
+            // get bitmap of the wallpaper
+            Bitmap bitmap = ImageUtil.getBitmapForUri(this, uri);
+            changeWallpaper(bitmap);
+        }
+
 
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .enableAutoManage(this /* FragmentActivity */, this /* OnConnectionFailedListener */)
@@ -203,7 +225,7 @@ public class MainActivity extends AppCompatActivity
         mImageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                pickImage();
+                pickImage(REQUEST_PICK_IMAGE);
             }
 
         });
@@ -237,85 +259,6 @@ public class MainActivity extends AppCompatActivity
             }
         });
 
-    }
-
-    private void loadmap() {
-        mProgressBar.setVisibility(ProgressBar.VISIBLE);
-        mLocationButton.setEnabled(false);
-
-        Loader<Bitmap> loader = getSupportLoaderManager().initLoader(0, null,
-                new LoaderManager.LoaderCallbacks<Bitmap>() {
-
-                    @Override
-                    public Loader<Bitmap> onCreateLoader(final int id, final Bundle args) {
-                        return new MapLoader(MainActivity.this);
-                    }
-
-                    @Override
-                    public void onLoadFinished(final Loader<Bitmap> loader, final Bitmap result) {
-                        mProgressBar.setVisibility(ProgressBar.INVISIBLE);
-                        mLocationButton.setEnabled(true);
-
-                        if (result == null) return;
-                        // Resize if too big for messaging
-                        Bitmap resizedBitmap = ImageUtil.scaleImage(result);
-                        Uri uri = null;
-                        if (result != resizedBitmap) {
-                                uri = savePhotoImage(MainActivity.this, resizedBitmap);
-                            } else {
-                                uri = savePhotoImage(MainActivity.this, result);
-                            }
-                            createImageMessage(uri);
-                        }
-
-                    @Override
-                    public void onLoaderReset(final Loader<Bitmap> loader) {
-                    }
-                });
-        loader.forceLoad();
-    }
-
-    private void pickImage() {
-        // ACTION_OPEN_DOCUMENT is the intent to choose a file via the system's file browser
-        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-        // Filter to only show results that can be "opened"
-        intent.addCategory(Intent.CATEGORY_OPENABLE);
-        // Filter to show only images, using the image MIME data type.
-        intent.setType("image/*");
-        startActivityForResult(intent, REQUEST_PICK_IMAGE);
-    }
-
-    // camera
-    private void captureImage() {
-        if ( (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED ) ) {
-            Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-            intent.putExtra(MediaStore.EXTRA_VIDEO_QUALITY, 2);
-            startActivityForResult(intent, REQUEST_CAPTURE_IMAGE);
-        } else {
-            String[] permissionRequested = {Manifest.permission.CAMERA};
-            ActivityCompat.requestPermissions(this, permissionRequested, REQUEST_CAMERA_PERMISSION);
-        }
-    }
-
-    // microphone
-    private void getSpeechInput() {
-
-        if ( (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED ) ) {
-            // prompt the user for speech and send it through a speech recognizer
-            Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
-
-            if (intent.resolveActivity(getPackageManager()) != null) {
-                // result returned via activity results in the form of intent
-                startActivityForResult(intent, REQUEST_MICROPHONE_PERMISSION);
-            } else {
-                Toast.makeText(this, "Your Device does not support Speech Input", Toast.LENGTH_SHORT).show();
-            }
-        } else {
-            String[] permissionRequested = {Manifest.permission.RECORD_AUDIO};
-            ActivityCompat.requestPermissions(this, permissionRequested, REQUEST_MICROPHONE_PERMISSION);
-        }
     }
 
     @Override
@@ -360,12 +303,100 @@ public class MainActivity extends AppCompatActivity
             case R.id.day_night_mode:
                 changeMode();
                 return true;
+            case R.id.change_wallpaper:
+                chooseWallpaper();
+                return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
     }
 
-     // day/night mode -- referred YouTube tutorials
+    private void chooseWallpaper() {
+        mRelativeLayout.setBackgroundResource(0);
+        mSharedPreferences.edit().remove("wallpaperPath").apply();
+        pickImage(REQUEST_CHANGE_WALLPAPER);
+    }
+
+    private void loadmap() {
+        mProgressBar.setVisibility(ProgressBar.VISIBLE);
+        mLocationButton.setEnabled(false);
+
+        Loader<Bitmap> loader = getSupportLoaderManager().initLoader(0, null,
+                new LoaderManager.LoaderCallbacks<Bitmap>() {
+
+                    @Override
+                    public Loader<Bitmap> onCreateLoader(final int id, final Bundle args) {
+                        return new MapLoader(MainActivity.this);
+                    }
+
+                    @Override
+                    public void onLoadFinished(final Loader<Bitmap> loader, final Bitmap result) {
+                        mProgressBar.setVisibility(ProgressBar.INVISIBLE);
+                        mLocationButton.setEnabled(true);
+
+                        if (result == null) return;
+                        // Resize if too big for messaging
+                        Bitmap resizedBitmap = ImageUtil.scaleImage(result);
+                        Uri uri = null;
+                        if (result != resizedBitmap) {
+                            uri = savePhotoImage(MainActivity.this, resizedBitmap);
+                        } else {
+                            uri = savePhotoImage(MainActivity.this, result);
+                        }
+                        createImageMessage(uri);
+                    }
+
+                    @Override
+                    public void onLoaderReset(final Loader<Bitmap> loader) {
+                    }
+                });
+        loader.forceLoad();
+    }
+
+    private void pickImage(int requestCode) {
+        // ACTION_OPEN_DOCUMENT is the intent to choose a file via the system's file browser
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        // Filter to only show results that can be "opened"
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        // Filter to show only images, using the image MIME data type.
+        intent.setType("image/*");
+        startActivityForResult(intent, requestCode);
+    }
+
+    // camera
+    private void captureImage() {
+        if ( (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED ) ) {
+            Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+            intent.putExtra(MediaStore.EXTRA_VIDEO_QUALITY, 2);
+            startActivityForResult(intent, REQUEST_CAPTURE_IMAGE);
+        } else {
+            String[] permissionRequested = {Manifest.permission.CAMERA};
+            ActivityCompat.requestPermissions(this, permissionRequested, REQUEST_CAMERA_PERMISSION);
+        }
+    }
+
+    // microphone
+    private void getSpeechInput() {
+
+        if ( (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED ) ) {
+            // prompt the user for speech and send it through a speech recognizer
+            Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
+
+            if (intent.resolveActivity(getPackageManager()) != null) {
+                // result returned via activity results in the form of intent
+                startActivityForResult(intent, REQUEST_MICROPHONE_PERMISSION);
+            } else {
+                Toast.makeText(this, "Your Device does not support Speech Input", Toast.LENGTH_SHORT).show();
+            }
+        } else {
+            String[] permissionRequested = {Manifest.permission.RECORD_AUDIO};
+            ActivityCompat.requestPermissions(this, permissionRequested, REQUEST_MICROPHONE_PERMISSION);
+        }
+    }
+
+    // day/night mode -- referred YouTube tutorials
      private void changeMode() {
         if (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_NO || AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_AUTO || AppCompatDelegate.getDefaultNightMode() == -1 ) {
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
@@ -467,10 +498,32 @@ public class MainActivity extends AppCompatActivity
 
             // send audio as a text message
             MessageUtil.send(text);
-        }else {
+        } else {
             Log.e(TAG, "Cannot get an audio");
         }
 
+        // change wallpaper
+        if (requestCode == REQUEST_CHANGE_WALLPAPER && resultCode == Activity.RESULT_OK) {
+
+            if (data != null) {
+                Uri uri = data.getData();
+
+                Bitmap bitmap = ImageUtil.getBitmapForUri(this, uri);
+                SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+                SharedPreferences.Editor editor = sharedPreferences.edit();
+                editor.putString("wallpaperPath", uri.toString());
+                editor.apply();
+                changeWallpaper(bitmap);
+            }
+        }
+    }
+
+    // change wallpaper
+    private void changeWallpaper(Bitmap bitmap) {
+        Drawable drawable = new BitmapDrawable(getResources(), bitmap);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+            mRelativeLayout.setBackground(drawable);
+        }
     }
 
     private void createImageMessage(Uri uri) {
@@ -495,4 +548,5 @@ public class MainActivity extends AppCompatActivity
             }
         });
     }
+
 }
