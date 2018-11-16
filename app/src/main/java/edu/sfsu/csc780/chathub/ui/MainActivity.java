@@ -135,6 +135,18 @@ public class MainActivity extends AppCompatActivity
         mRelativeLayout = (RelativeLayout) findViewById(R.id.setWallpaper);
 
         mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+
+        // get wallpaper path
+        String wallpaperPath = mSharedPreferences.getString("wallpaperPath",null);
+
+        if (wallpaperPath != null) {
+            Uri uri = Uri.parse(wallpaperPath);
+
+            // get bitmap of the wallpaper
+            Bitmap bitmap = ImageUtil.getBitmapForUri(this, uri);
+            changeWallpaper(bitmap);
+        }
+
         // Set default username is anonymous.
         mUsername = ANONYMOUS;
         //Initialize Auth
@@ -150,18 +162,6 @@ public class MainActivity extends AppCompatActivity
                 mPhotoUrl = mUser.getPhotoUrl().toString();
             }
         }
-
-        // get wallpaper path
-        String wallpaperPath = mSharedPreferences.getString("wallpaperPath",null);
-
-        if (wallpaperPath != null) {
-            Uri uri = Uri.parse(wallpaperPath);
-
-            // get bitmap of the wallpaper
-            Bitmap bitmap = ImageUtil.getBitmapForUri(this, uri);
-            changeWallpaper(bitmap);
-        }
-
 
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .enableAutoManage(this /* FragmentActivity */, this /* OnConnectionFailedListener */)
@@ -285,6 +285,12 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
+    public void onSaveInstanceState(Bundle savedInstanceState) {
+        // Always call the superclass so it can save the view hierarchy state
+        super.onSaveInstanceState(savedInstanceState);
+    }
+
+    @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.main_menu, menu);
@@ -304,17 +310,11 @@ public class MainActivity extends AppCompatActivity
                 changeMode();
                 return true;
             case R.id.change_wallpaper:
-                chooseWallpaper();
+                pickImage(REQUEST_CHANGE_WALLPAPER);
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
-    }
-
-    private void chooseWallpaper() {
-        mRelativeLayout.setBackgroundResource(0);
-        mSharedPreferences.edit().remove("wallpaperPath").apply();
-        pickImage(REQUEST_CHANGE_WALLPAPER);
     }
 
     private void loadmap() {
@@ -491,15 +491,17 @@ public class MainActivity extends AppCompatActivity
         // microphone
         if (requestCode == REQUEST_MICROPHONE_PERMISSION && resultCode == Activity.RESULT_OK) {
 
-            // get audio & store it in ArrayList of Strings
-            ArrayList<String> audio = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+            if (data != null) {
+                // get audio & store it in ArrayList of Strings
+                ArrayList<String> audio = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
 
-            ChatMessage text = new ChatMessage(audio.get(0), mUsername, mPhotoUrl);
+                ChatMessage text = new ChatMessage(audio.get(0), mUsername, mPhotoUrl);
 
-            // send audio as a text message
-            MessageUtil.send(text);
-        } else {
-            Log.e(TAG, "Cannot get an audio");
+                // send audio as a text message
+                MessageUtil.send(text);
+            } else {
+                Log.e(TAG, "Cannot get an audio");
+            }
         }
 
         // change wallpaper
@@ -521,9 +523,9 @@ public class MainActivity extends AppCompatActivity
     // change wallpaper
     private void changeWallpaper(Bitmap bitmap) {
         Drawable drawable = new BitmapDrawable(getResources(), bitmap);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
             mRelativeLayout.setBackground(drawable);
-        }
+//        }
     }
 
     private void createImageMessage(Uri uri) {
