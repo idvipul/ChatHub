@@ -429,24 +429,20 @@ public class MainActivity extends AppCompatActivity
         boolean isGranted = (grantResults.length > 0
                 && grantResults[0] == PackageManager.PERMISSION_GRANTED);
 
-        if (isGranted && requestCode == LocationUtils.REQUEST_CODE) {
-            LocationUtils.startLocationUpdates(this);
+        if (isGranted) {
+            switch (requestCode) {
+                case LocationUtils.REQUEST_CODE :
+                    LocationUtils.startLocationUpdates(this);
+                    break;
+                case REQUEST_CAMERA_PERMISSION :
+                    captureImage();
+                    break;
+                case REQUEST_MICROPHONE_PERMISSION :
+                    getSpeechInput();
+                    break;
+            }
         }
-
-        // camera
-        if (isGranted && requestCode == REQUEST_CAMERA_PERMISSION) {
-            captureImage();
-        } else {
-            Toast.makeText(this, "Camera needs permission to open", Toast.LENGTH_SHORT).show();
-        }
-
-        // microphone
-        if (isGranted && requestCode == REQUEST_MICROPHONE_PERMISSION) {
-            getSpeechInput();
-        } else {
-            Toast.makeText(this, "Microphone needs permission to open", Toast.LENGTH_SHORT).show();
-        }
-    }
+  }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -509,7 +505,6 @@ public class MainActivity extends AppCompatActivity
 
             if (data != null) {
                 Uri uri = data.getData();
-
                 Bitmap bitmap = ImageUtil.getBitmapForUri(this, uri);
                 SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
                 SharedPreferences.Editor editor = sharedPreferences.edit();
@@ -518,14 +513,13 @@ public class MainActivity extends AppCompatActivity
                 changeWallpaper(bitmap);
             }
         }
+
     }
 
     // change wallpaper
     private void changeWallpaper(Bitmap bitmap) {
         Drawable drawable = new BitmapDrawable(getResources(), bitmap);
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
             mRelativeLayout.setBackground(drawable);
-//        }
     }
 
     private void createImageMessage(Uri uri) {
