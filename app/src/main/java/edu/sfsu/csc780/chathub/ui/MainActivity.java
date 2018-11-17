@@ -29,6 +29,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.speech.RecognizerIntent;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
@@ -80,6 +81,7 @@ import java.util.Map;
 import de.hdodenhof.circleimageview.CircleImageView;
 import edu.sfsu.csc780.chathub.R;
 import edu.sfsu.csc780.chathub.model.ChatMessage;
+import edu.sfsu.csc780.chathub.service.ChatHeadService;
 
 import static edu.sfsu.csc780.chathub.ui.ImageUtil.savePhotoImage;
 
@@ -120,6 +122,7 @@ public class MainActivity extends AppCompatActivity
     private static final int REQUEST_CAMERA_PERMISSION = 3;
     private static final int REQUEST_MICROPHONE_PERMISSION = 4;
     private static final int REQUEST_CHANGE_WALLPAPER = 5;
+    private static final int REQUEST_CHATHEAD_PERMISSION = 6;
     private double MAX_LINEAR_DIMENSION = 500.0;
 
     @Override
@@ -137,15 +140,14 @@ public class MainActivity extends AppCompatActivity
         mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
 
         // get wallpaper path
-        String wallpaperPath = mSharedPreferences.getString("wallpaperPath",null);
-
-        if (wallpaperPath != null) {
-            Uri uri = Uri.parse(wallpaperPath);
-
-            // get bitmap of the wallpaper
-            Bitmap bitmap = ImageUtil.getBitmapForUri(this, uri);
-            changeWallpaper(bitmap);
-        }
+//        String wallpaperPath = mSharedPreferences.getString("wallpaperPath",null);
+//
+//        if (wallpaperPath != null) {
+//            Uri uri = Uri.parse(wallpaperPath);
+//            // get bitmap of the wallpaper
+//            Bitmap bitmap = ImageUtil.getBitmapForUri(this, uri);
+//            changeWallpaper(bitmap);
+//        }
 
         // Set default username is anonymous.
         mUsername = ANONYMOUS;
@@ -259,6 +261,12 @@ public class MainActivity extends AppCompatActivity
             }
         });
 
+        // enable user permission to start chathead service -- referred Youtube tutorial
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this) ){
+            Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + getPackageName()));
+            startActivityForResult(intent, REQUEST_CHATHEAD_PERMISSION);
+        }
+
     }
 
     @Override
@@ -282,6 +290,13 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onDestroy() {
         super.onDestroy();
+    }
+
+    @Override
+    public void onBackPressed() {
+        startService(new Intent(MainActivity.this, ChatHeadService.class));
+        super.onBackPressed();
+
     }
 
     @Override
@@ -512,6 +527,11 @@ public class MainActivity extends AppCompatActivity
                 editor.apply();
                 changeWallpaper(bitmap);
             }
+        }
+
+        // chathead
+        if (requestCode == REQUEST_CHATHEAD_PERMISSION && resultCode == Activity.RESULT_OK) {
+            finish();
         }
 
     }
