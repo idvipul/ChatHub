@@ -140,14 +140,14 @@ public class MainActivity extends AppCompatActivity
         mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
 
         // get wallpaper path
-//        String wallpaperPath = mSharedPreferences.getString("wallpaperPath",null);
-//
-//        if (wallpaperPath != null) {
-//            Uri uri = Uri.parse(wallpaperPath);
-//            // get bitmap of the wallpaper
-//            Bitmap bitmap = ImageUtil.getBitmapForUri(this, uri);
-//            changeWallpaper(bitmap);
-//        }
+        String wallpaperPath = mSharedPreferences.getString("wallpaperPath",null);
+
+        if (wallpaperPath != null) {
+            Uri uri = Uri.parse(wallpaperPath);
+            // get bitmap of the wallpaper
+            Bitmap bitmap = ImageUtil.getBitmapForUri(this, uri);
+            changeWallpaper(bitmap);
+        }
 
         // Set default username is anonymous.
         mUsername = ANONYMOUS;
@@ -237,7 +237,7 @@ public class MainActivity extends AppCompatActivity
 
             @Override
             public void onClick(View v) {
-                loadmap();
+                loadMap();
             }
         });
 
@@ -261,12 +261,16 @@ public class MainActivity extends AppCompatActivity
             }
         });
 
+        initChatHead();
+    }
+
+    private void initChatHead() {
         // enable user permission to start chathead service -- referred Youtube tutorial
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this) ){
-            Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + getPackageName()));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this) ) {
+            Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    Uri.parse("package:" + this.getPackageName()));
             startActivityForResult(intent, REQUEST_CHATHEAD_PERMISSION);
         }
-
     }
 
     @Override
@@ -332,7 +336,7 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    private void loadmap() {
+    private void loadMap() {
         mProgressBar.setVisibility(ProgressBar.VISIBLE);
         mLocationButton.setEnabled(false);
 
@@ -531,6 +535,7 @@ public class MainActivity extends AppCompatActivity
 
         // chathead
         if (requestCode == REQUEST_CHATHEAD_PERMISSION && resultCode == Activity.RESULT_OK) {
+            Toast.makeText(this, "Overlay permission not granted. Closing the application", Toast.LENGTH_SHORT).show();
             finish();
         }
 

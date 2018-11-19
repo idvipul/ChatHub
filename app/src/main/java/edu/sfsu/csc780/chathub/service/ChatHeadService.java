@@ -11,15 +11,16 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
-import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.RelativeLayout;
 
 import edu.sfsu.csc780.chathub.R;
+import edu.sfsu.csc780.chathub.ui.MainActivity;
 
 public class ChatHeadService extends Service {
     private View mChatHeadView;
     private WindowManager mWindowManager;
+    private View mChatHeadLayout;
+    private WindowManager.LayoutParams mParams;
 
     @Nullable
     @Override
@@ -35,7 +36,7 @@ public class ChatHeadService extends Service {
 
         mChatHeadView = LayoutInflater.from(this).inflate(R.layout.chat_head, null);
 
-        final WindowManager.LayoutParams params = new WindowManager.LayoutParams(
+        mParams = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.TYPE_PHONE,
@@ -43,74 +44,84 @@ public class ChatHeadService extends Service {
                 PixelFormat.TRANSLUCENT
         );
 
-        params.gravity = Gravity.TOP | Gravity.LEFT;
-        params.x = 0;
-        params.y = 100;
+        // chat head initial position
+        mParams.gravity = Gravity.TOP | Gravity.LEFT;
+        mParams.x = 10;
+        mParams.y = 150;
 
         mWindowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
-        mWindowManager.addView(mChatHeadView, params);
+        mWindowManager.addView(mChatHeadView, mParams);
 
-        ImageView chatHeadImage = mChatHeadView.findViewById(R.id.chat_head_image);
+        mChatHeadLayout = mChatHeadView.findViewById(R.id.chat_head_layout);
+
+        ImageView chatHeadImage = (ImageView) mChatHeadView.findViewById(R.id.chat_head_image);
+
         chatHeadImage.setOnTouchListener(new View.OnTouchListener() {
 
-            private int initialX;
-            private int initialY;
-            private int touchX;
-            private int touchY;
-            private int lastAction;
-
+            int initialX, initialY;
+            float touchX, touchY;
 
             @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                    initialX = params.x;
-                    initialY = params.y;
+            public boolean onTouch(View view, MotionEvent event) {
 
-                    touchX = (int) event.getRawX();
-                    touchY = (int) event.getRawY();
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        // initial positions
+                        initialX = mParams.x;
+                        initialY = mParams.y;
 
-                    lastAction = event.getAction();
-                    return  true;
-                }
+                        // touch locations
+                        touchX = event.getRawX();
+                        touchY = event.getRawY();
+                        return true;
 
-                if (event.getAction() == MotionEvent.ACTION_UP) {
-                    if (lastAction == MotionEvent.ACTION_DOWN) {
-                        Button button = new Button(ChatHeadService.this);
-                        button.setText("Close");
+                    case MotionEvent.ACTION_MOVE:
+                        mParams.x = (int) (initialX + (event.getRawX() - touchX));
+                        mParams.y = (int) (initialY + (event.getRawY() - touchY));
 
-                        RelativeLayout layout = mChatHeadView.findViewById(R.id.chat_head_layout);
-                        layout.addView(button);
+                        // update layout to the new location
+                        mWindowManager.updateViewLayout(mChatHeadView, mParams);
+                        return true;
 
-                        button.setOnClickListener(new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-                                stopSelf();
+                    case MotionEvent.ACTION_UP:
+                        int xClick = (int) (event.getRawX() - touchX);
+                        int yClick = (int) (event.getRawY() - touchY);
+
+                        if (xClick < 10 && yClick < 10) {
+                            if (mChatHeadLayout.getVisibility() == View.VISIBLE || mChatHeadLayout == null) {
+                                // start chat hub app - on click event
+                                startChatApp(view);
                             }
-                        });
-                    }
-                    lastAction = event.getAction();
-                    return true;
-                }
+                        }
 
-                if (event.getAction() == MotionEvent.ACTION_MOVE ) {
-                    params.x = initialX + (int)(event.getRawX() - touchX);
-                    params.y = initialY + (int)(event.getRawY() - touchY);
-
-                    mWindowManager.updateViewLayout(mChatHeadView, params);
-                    lastAction = event.getAction();
-                    return true;
+                        return true;
                 }
                 return false;
             }
+
         });
+
+        // close chathead
+        ImageView closeButton = (ImageView) mChatHeadView.findViewById(R.id.close_button);
+        closeButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                stopSelf();
+            }
+        });
+    }
+
+    public void startChatApp(View view) {
+        Intent intent = new Intent(ChatHeadService.this, MainActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
+        stopSelf();
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-
-        if (mChatHeadView != null) {
+        if (mChatHeadView != null)
             mWindowManager.removeView(mChatHeadView);
-        }
     }
 }

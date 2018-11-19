@@ -10,7 +10,8 @@ local.properties
 /.idea/workspace.xml
 /.idea/libraries
 /build
-build
+.gradle
+build/
 /captures
 *~
 gen
