@@ -13,6 +13,7 @@
 
         <item name="dayNightModeButton">@drawable/ic_moon</item>
         <item name="micButton">@drawable/ic_my_mic_black</item>
+        <item name="emoticonButton">@drawable/ic_smiley_black</item>
         <item name="cameraButton">@drawable/ic_my_camera_black_24px</item>
         <item name="locationButton">@drawable/ic_my_location_black_24px</item>
         <item name="imageButton">@drawable/ic_image_black_24px</item>
@@ -33,6 +34,7 @@
 
         <item name="dayNightModeButton">@drawable/ic_sun</item>
         <item name="micButton">@drawable/ic_my_mic_white</item>
+        <item name="emoticonButton">@drawable/ic_smiley_white</item>
         <item name="cameraButton">@drawable/ic_my_camera_white_24px</item>
         <item name="locationButton">@drawable/ic_my_location_white_24px</item>
         <item name="imageButton">@drawable/ic_image_white_24px</item>

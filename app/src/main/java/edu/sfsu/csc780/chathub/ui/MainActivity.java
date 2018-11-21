@@ -120,6 +120,7 @@ public class MainActivity extends AppCompatActivity
     private ImageButton mLocationButton;
     private ImageButton mCameraButton;
     private ImageButton mMicrophoneButton;
+    public boolean isDayMode = true;
 
     // Firebase instance variables
     private FirebaseAuth mAuth;
@@ -147,8 +148,10 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         if (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_YES) {
+            isDayMode = false;
             setTheme(R.style.AppThemeNightMode);
         } else {
+            isDayMode = true;
             setTheme(R.style.AppThemeDayMode);
         }
 
@@ -345,7 +348,7 @@ public class MainActivity extends AppCompatActivity
         listView.setAdapter(mAdapter);
 
         View rootView = getWindow().getDecorView().getRootView();
-        final ImageView emojiButton = (ImageView) findViewById(R.id.emoticonButton);
+        final ImageView emoticonButton = (ImageView) findViewById(R.id.emoticonButton);
 
         final EmojiconsPopup popup = new EmojiconsPopup(rootView, this, true);
         popup.setSizeForSoftKeyboard();
@@ -353,7 +356,11 @@ public class MainActivity extends AppCompatActivity
         popup.setOnDismissListener(new PopupWindow.OnDismissListener() {
             @Override
             public void onDismiss() {
-                changeEmojiKeyboardIcon(emojiButton, R.drawable.smiley);
+                if (isDayMode) {
+                    changeEmojiKeyboardIcon(emoticonButton, R.drawable.ic_smiley_black);
+                } else {
+                    changeEmojiKeyboardIcon(emoticonButton, R.drawable.ic_smiley_white);
+                }
             }
         });
 
@@ -401,30 +408,10 @@ public class MainActivity extends AppCompatActivity
         });
 
         // To toggle between text keyboard and emoji keyboard keyboard(Popup)
-        emojiButton.setOnClickListener(new View.OnClickListener() {
+        emoticonButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // If popup is not showing => emoji keyboard is not visible, we need to show it
-                if(!popup.isShowing()){
-                    //If keyboard is visible, simply show the emoji popup
-                    if(popup.isKeyBoardOpen()){
-                        popup.showAtBottom();
-                        changeEmojiKeyboardIcon(emojiButton, R.drawable.ic_action_keyboard);
-                    }
-                    //else, open the text keyboard first and immediately after that show the emoji popup
-                    else{
-                        mMessageEditText.setFocusableInTouchMode(true);
-                        mMessageEditText.requestFocus();
-                        popup.showAtBottomPending();
-                        final InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-                        inputMethodManager.showSoftInput(mMessageEditText, InputMethodManager.SHOW_IMPLICIT);
-                        changeEmojiKeyboardIcon(emojiButton, R.drawable.ic_action_keyboard);
-                    }
-                }
-                //If popup is showing, simply dismiss it to show the undelying text keyboard
-                else{
-                    popup.dismiss();
-                }
+                popUpKeyboard(popup, emoticonButton);
             }
         });
 
@@ -451,18 +438,12 @@ public class MainActivity extends AppCompatActivity
     public void onPause() {
         super.onPause();
         isPaused = true;
-        if (isPaused) {
-            Log.d("is paused is ", "true");
-        }
     }
 
     @Override
     public void onResume() {
         super.onResume();
         isPaused = false;
-        if (!isPaused) {
-            Log.d("is paused is ", "false");
-        }
         LocationUtils.startLocationUpdates(this);
     }
 
@@ -602,6 +583,39 @@ public class MainActivity extends AppCompatActivity
         Intent intent = new Intent(getApplicationContext(), MainActivity.class);
         startActivity(intent);
         finish();
+    }
+
+    // popup emoji keyboard
+    private void popUpKeyboard(EmojiconsPopup popup, ImageView emoticonButton) {
+        // If popup is not showing => emoji keyboard is not visible, we need to show it
+        if(!popup.isShowing()){
+            //If keyboard is visible, simply show the emoji popup
+            if(popup.isKeyBoardOpen()){
+                popup.showAtBottom();
+                  if (isDayMode) {
+                    changeEmojiKeyboardIcon(emoticonButton, R.drawable.ic_keyboard_black);
+                  } else {
+                      changeEmojiKeyboardIcon(emoticonButton, R.drawable.ic_keyboard_white);
+                  }
+            }
+            //else, open the text keyboard first and immediately after that show the emoji popup
+            else{
+                mMessageEditText.setFocusableInTouchMode(true);
+                mMessageEditText.requestFocus();
+                popup.showAtBottomPending();
+                final InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                inputMethodManager.showSoftInput(mMessageEditText, InputMethodManager.SHOW_IMPLICIT);
+                if (isDayMode) {
+                    changeEmojiKeyboardIcon(emoticonButton, R.drawable.ic_keyboard_black);
+                } else {
+                    changeEmojiKeyboardIcon(emoticonButton, R.drawable.ic_keyboard_white);
+                }
+            }
+        }
+        //If popup is showing, simply dismiss it to show the undelying text keyboard
+        else{
+            popup.dismiss();
+        }
     }
 
     // emoticon
