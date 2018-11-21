@@ -109,6 +109,7 @@ public class ChatHeadService extends Service {
                 stopSelf();
             }
         });
+
     }
 
     public void startChatApp(View view) {

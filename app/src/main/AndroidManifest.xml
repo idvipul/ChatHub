@@ -2,10 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="edu.sfsu.csc780.chathub">
 
-    <meta-data
-        android:name="com.google.android.geo.API_KEY"
-        android:value="AIzaSyC1-49pPnMsUT9CNaxb_wKoFL4UMRMpM0g" />
-
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.CAMERA"/>
@@ -18,6 +14,11 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppThemeDayMode">
+
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyC1-49pPnMsUT9CNaxb_wKoFL4UMRMpM0g" />
+
         <activity android:name="edu.sfsu.csc780.chathub.ui.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -27,6 +28,18 @@
         </activity>
 
         <activity android:name="edu.sfsu.csc780.chathub.ui.SignInActivity" />
+
+        <activity
+            android:name="edu.sfsu.csc780.chathub.ui.NotificationActivity"
+            android:excludeFromRecents="true"
+            android:taskAffinity="">
+        </activity>
+
+        <service android:name="edu.sfsu.csc780.chathub.service.FCMService">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT"/>
+            </intent-filter>
+        </service>
 
         <service android:name="edu.sfsu.csc780.chathub.service.ChatHeadService"
             android:enabled="true" />

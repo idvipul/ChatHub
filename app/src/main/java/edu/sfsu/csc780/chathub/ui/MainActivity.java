@@ -17,6 +17,9 @@ package edu.sfsu.csc780.chathub.ui;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.Notification;
+import android.app.PendingIntent;
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -26,7 +29,7 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
+import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.provider.Settings;
@@ -35,6 +38,9 @@ import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.LoaderManager;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.NotificationManagerCompat;
+import android.support.v4.app.RemoteInput;
 import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.app.AppCompatDelegate;
@@ -64,20 +70,16 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.ChildEventListener;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
-
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-
 import de.hdodenhof.circleimageview.CircleImageView;
 import edu.sfsu.csc780.chathub.R;
 import edu.sfsu.csc780.chathub.model.ChatMessage;
@@ -117,6 +119,13 @@ public class MainActivity extends AppCompatActivity
     private ImageButton mImageButton;
     private RelativeLayout mRelativeLayout;
 
+    // FCM
+    public DatabaseReference ref;
+    public static boolean isPaused;
+    private Handler mHandler;
+    final Handler handler = new Handler();
+    private ProgressDialog mProgressDialog;
+
     private static final int REQUEST_PICK_IMAGE = 1;
     private static final int REQUEST_CAPTURE_IMAGE = 2;
     private static final int REQUEST_CAMERA_PERMISSION = 3;
@@ -135,12 +144,53 @@ public class MainActivity extends AppCompatActivity
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         mRelativeLayout = (RelativeLayout) findViewById(R.id.setWallpaper);
+
+        // fcm
+        mHandler = new Handler();
+        ref = FirebaseDatabase.getInstance().getReference();
+        ref.child(MESSAGES_CHILD).limitToLast(1).addChildEventListener(new ChildEventListener() {
+            @Override
+            public void onChildAdded(final DataSnapshot snapshot, String s) {
+
+                if (isPaused) {
+                    mHandler.postAtTime(new Runnable() {
+                        @Override
+                        public void run() {
+                            String text = (String) snapshot.child("text").getValue();
+                            showNotification(text);
+                        }
+                    }, 3000);
+                }
+
+            }
+
+            @Override
+            public void onChildChanged(DataSnapshot snapshot, String s) {
+
+            }
+
+            @Override
+            public void onChildRemoved(DataSnapshot snapshot) {
+
+            }
+
+            @Override
+            public void onChildMoved(DataSnapshot snapshot, String s) {
+
+            }
+
+            @Override
+            public void onCancelled(DatabaseError error) {
+
+            }
+        });
 
         mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
 
         // get wallpaper path
-        String wallpaperPath = mSharedPreferences.getString("wallpaperPath",null);
+        String wallpaperPath = mSharedPreferences.getString("wallpaperPath", null);
 
         if (wallpaperPath != null) {
             Uri uri = Uri.parse(wallpaperPath);
@@ -233,7 +283,7 @@ public class MainActivity extends AppCompatActivity
         });
 
         mLocationButton = (ImageButton) findViewById(R.id.locationButton);
-        mLocationButton.setOnClickListener( new View.OnClickListener() {
+        mLocationButton.setOnClickListener(new View.OnClickListener() {
 
             @Override
             public void onClick(View v) {
@@ -243,7 +293,7 @@ public class MainActivity extends AppCompatActivity
 
         // camera -- referred YouTube tutorials
         mCameraButton = (ImageButton) findViewById(R.id.cameraButton);
-        mCameraButton.setOnClickListener( new View.OnClickListener() {
+        mCameraButton.setOnClickListener(new View.OnClickListener() {
 
             @Override
             public void onClick(View v) {
@@ -253,7 +303,7 @@ public class MainActivity extends AppCompatActivity
 
         // microphone -- referred YouTube tutorials
         mMicrophoneButton = (ImageButton) findViewById(R.id.microphoneButton);
-        mMicrophoneButton.setOnClickListener( new View.OnClickListener() {
+        mMicrophoneButton.setOnClickListener(new View.OnClickListener() {
 
             @Override
             public void onClick(View v) {
@@ -261,12 +311,35 @@ public class MainActivity extends AppCompatActivity
             }
         });
 
+        // FCM
+        /**
+         * Retrieve the Intent that was used to launch this activity.
+         */
+        Intent intent = getIntent();
+
+        /**
+         * Try to get the string parameter called 'param'. This parameter is set
+         * in showNotification().
+         */
+        String param = getMessagetext(intent);
+
+        if (param != null) {
+
+            //Send the message to the mobile app
+            ChatMessage chatMessage = new
+                    ChatMessage(param,
+                    mUsername,
+                    mPhotoUrl);
+            MessageUtil.send(chatMessage);
+            mMessageEditText.setText("");
+        }
+
         initChatHead();
-    }
+    } // -- onCreate ends
 
     private void initChatHead() {
         // enable user permission to start chathead service -- referred Youtube tutorial
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this) ) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
             Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                     Uri.parse("package:" + this.getPackageName()));
             startActivityForResult(intent, REQUEST_CHATHEAD_PERMISSION);
@@ -283,11 +356,19 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onPause() {
         super.onPause();
+        isPaused = true;
+        if (isPaused) {
+            Log.d("is paused is ", "true");
+        }
     }
 
     @Override
     public void onResume() {
         super.onResume();
+        isPaused = false;
+        if (!isPaused) {
+            Log.d("is paused is ", "false");
+        }
         LocationUtils.startLocationUpdates(this);
     }
 
@@ -384,7 +465,7 @@ public class MainActivity extends AppCompatActivity
 
     // camera
     private void captureImage() {
-        if ( (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED ) ) {
+        if ((ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)) {
             Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
             intent.putExtra(MediaStore.EXTRA_VIDEO_QUALITY, 2);
             startActivityForResult(intent, REQUEST_CAPTURE_IMAGE);
@@ -397,7 +478,7 @@ public class MainActivity extends AppCompatActivity
     // microphone
     private void getSpeechInput() {
 
-        if ( (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED ) ) {
+        if ((ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)) {
             // prompt the user for speech and send it through a speech recognizer
             Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
             intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
@@ -416,8 +497,8 @@ public class MainActivity extends AppCompatActivity
     }
 
     // day/night mode -- referred YouTube tutorials
-     private void changeMode() {
-        if (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_NO || AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_AUTO || AppCompatDelegate.getDefaultNightMode() == -1 ) {
+    private void changeMode() {
+        if (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_NO || AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_AUTO || AppCompatDelegate.getDefaultNightMode() == -1) {
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
             Toast.makeText(this, "Changed to Night Mode", Toast.LENGTH_SHORT).show();
         } else {
@@ -427,6 +508,57 @@ public class MainActivity extends AppCompatActivity
         Intent intent = new Intent(getApplicationContext(), MainActivity.class);
         startActivity(intent);
         finish();
+    }
+
+    // reply from notification
+    private String getMessagetext(Intent intent) {
+        Bundle remoteInput = RemoteInput.getResultsFromIntent(intent);
+        if (remoteInput != null) {
+            return (String) remoteInput.getCharSequence("message");
+        }
+        return null;
+    }
+
+    // referred a tutorial online
+    private void showNotification(String param) {
+        NotificationCompat.BigTextStyle bigStyle = new NotificationCompat.BigTextStyle();
+        bigStyle.bigText(param);
+        String replyLabel = getResources().getString(R.string.reply);
+
+        // This PendingIntent will be fired when the user taps on the notification in the status bar.
+
+        RemoteInput remoteInput = new RemoteInput.Builder("message")
+                .setLabel(replyLabel)
+                .build();
+
+        Intent replyIntent = new Intent(this, MainActivity.class);
+        PendingIntent replyPendingIntent = PendingIntent.getActivity(this, 0, replyIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+        replyIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP
+                | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+
+        NotificationCompat.Action action1 = new NotificationCompat.Action.Builder(R.drawable.ic_reply_back_48px,
+                getString(R.string.reply), replyPendingIntent)
+                .addRemoteInput(remoteInput).build();
+
+        List<NotificationCompat.Action> actions = new ArrayList<>();
+        actions.add(action1);
+
+        Notification notification = new NotificationCompat.Builder(this)
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setSmallIcon(R.mipmap.ic_launcher).setAutoCancel(true)
+                .setDefaults(Notification.DEFAULT_SOUND).setContentTitle("New Message Received!")
+                .setContentText(param)
+                .setStyle(bigStyle).build();
+
+        replyIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP
+                | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+
+        notification.flags |= Notification.FLAG_AUTO_CANCEL;
+        notification.contentIntent = replyPendingIntent;
+
+        NotificationManagerCompat mNotificationManager = NotificationManagerCompat.from(this);
+        mNotificationManager.notify(1, notification);
     }
 
     @Override
@@ -450,18 +582,18 @@ public class MainActivity extends AppCompatActivity
 
         if (isGranted) {
             switch (requestCode) {
-                case LocationUtils.REQUEST_CODE :
+                case LocationUtils.REQUEST_CODE:
                     LocationUtils.startLocationUpdates(this);
                     break;
-                case REQUEST_CAMERA_PERMISSION :
+                case REQUEST_CAMERA_PERMISSION:
                     captureImage();
                     break;
-                case REQUEST_MICROPHONE_PERMISSION :
+                case REQUEST_MICROPHONE_PERMISSION:
                     getSpeechInput();
                     break;
             }
         }
-  }
+    }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -544,7 +676,7 @@ public class MainActivity extends AppCompatActivity
     // change wallpaper
     private void changeWallpaper(Bitmap bitmap) {
         Drawable drawable = new BitmapDrawable(getResources(), bitmap);
-            mRelativeLayout.setBackground(drawable);
+        mRelativeLayout.setBackground(drawable);
     }
 
     private void createImageMessage(Uri uri) {
@@ -569,5 +701,4 @@ public class MainActivity extends AppCompatActivity
             }
         });
     }
-
 }
