@@ -58,6 +58,9 @@ dependencies {
     implementation 'com.firebaseui:firebase-ui-database:0.4.0'
     implementation 'com.firebase:firebase-client-android:2.5.2'
 
+    // emoticon
+    implementation 'com.github.hani-momanii:SuperNova-Emoji:1.0'
+
     // Testing dependencies
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'

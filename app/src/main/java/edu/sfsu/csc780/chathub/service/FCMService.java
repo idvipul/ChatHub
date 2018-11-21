@@ -28,8 +28,6 @@ public class FCMService extends FirebaseMessagingService {
          received here in onMessageReceived when the app is in the foreground. When the app is in
           the background an automatically generated notification is displayed. */
 
-        Log.d(TAG, "From: " + remoteMessage.getFrom());
-
         // Check if message contains a data payload.
         if (remoteMessage.getData().size() > 0) {
             Log.d(TAG, "Message data payload: " + remoteMessage.getData());

@@ -6,6 +6,7 @@
         <attr name="cameraButton" format="color" />
         <attr name="locationButton" format="color" />
         <attr name="imageButton" format="color" />
+        <attr name="emoticonButton" format="color" />
         <attr name="sendButton" format="color" />
     </declare-styleable>
 </resources>

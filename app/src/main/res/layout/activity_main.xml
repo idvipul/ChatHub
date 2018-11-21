@@ -26,12 +26,19 @@
         android:orientation="vertical"
         android:layout_alignParentLeft="true">
 
-        <EditText
+        <hani.momanii.supernova_emoji_library.Helper.EmojiconEditText
             android:id="@+id/messageEditText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="textMultiLine"
             android:paddingTop="20dp" />
+
+        <ListView
+            android:id="@+id/listView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_below="@id/messageEditText"
+            ></ListView>
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -51,6 +58,15 @@
                 android:layout_width="0dp"
                 android:layout_height="0dp"
                 android:layout_weight="1" />
+
+            <ImageButton
+                android:id="@+id/emoticonButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:background="@drawable/button_ripple"
+                android:padding="16dp"
+                android:src="@drawable/smiley" />
 
             <ImageButton
                 android:id="@+id/cameraButton"

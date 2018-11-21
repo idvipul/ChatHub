@@ -20,6 +20,7 @@ import android.app.Activity;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -50,13 +51,19 @@ import android.text.Editable;
 import android.text.InputFilter;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.ListView;
 import android.widget.PopupMenu;
+import android.widget.PopupWindow;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -84,6 +91,10 @@ import de.hdodenhof.circleimageview.CircleImageView;
 import edu.sfsu.csc780.chathub.R;
 import edu.sfsu.csc780.chathub.model.ChatMessage;
 import edu.sfsu.csc780.chathub.service.ChatHeadService;
+
+import hani.momanii.supernova_emoji_library.Helper.EmojiconGridView;
+import hani.momanii.supernova_emoji_library.Helper.EmojiconsPopup;
+import hani.momanii.supernova_emoji_library.emoji.Emojicon;
 
 import static edu.sfsu.csc780.chathub.ui.ImageUtil.savePhotoImage;
 
@@ -114,8 +125,7 @@ public class MainActivity extends AppCompatActivity
     private FirebaseAuth mAuth;
     private FirebaseUser mUser;
 
-    private FirebaseRecyclerAdapter<ChatMessage, MessageUtil.MessageViewHolder>
-            mFirebaseAdapter;
+    private FirebaseRecyclerAdapter<ChatMessage, MessageUtil.MessageViewHolder> mFirebaseAdapter;
     private ImageButton mImageButton;
     private RelativeLayout mRelativeLayout;
 
@@ -190,14 +200,14 @@ public class MainActivity extends AppCompatActivity
         mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
 
         // get wallpaper path
-        String wallpaperPath = mSharedPreferences.getString("wallpaperPath", null);
-
-        if (wallpaperPath != null) {
-            Uri uri = Uri.parse(wallpaperPath);
-            // get bitmap of the wallpaper
-            Bitmap bitmap = ImageUtil.getBitmapForUri(this, uri);
-            changeWallpaper(bitmap);
-        }
+//        String wallpaperPath = mSharedPreferences.getString("wallpaperPath", null);
+//
+//        if (wallpaperPath != null) {
+//            Uri uri = Uri.parse(wallpaperPath);
+//            // get bitmap of the wallpaper
+//            Bitmap bitmap = ImageUtil.getBitmapForUri(this, uri);
+//            changeWallpaper(bitmap);
+//        }
 
         // Set default username is anonymous.
         mUsername = ANONYMOUS;
@@ -311,21 +321,16 @@ public class MainActivity extends AppCompatActivity
             }
         });
 
-        // FCM
-        /**
-         * Retrieve the Intent that was used to launch this activity.
-         */
+        // push notification
+        // retrieve the intent that was used to launch this activity.
         Intent intent = getIntent();
 
-        /**
-         * Try to get the string parameter called 'param'. This parameter is set
-         * in showNotification().
-         */
+        //get the string parameter called 'param' - set in showNotification()
         String param = getMessagetext(intent);
 
         if (param != null) {
 
-            //Send the message to the mobile app
+            // send the message to the mobile app
             ChatMessage chatMessage = new
                     ChatMessage(param,
                     mUsername,
@@ -333,6 +338,95 @@ public class MainActivity extends AppCompatActivity
             MessageUtil.send(chatMessage);
             mMessageEditText.setText("");
         }
+
+        // emoticons - referred an online tutorial
+        ListView listView = (ListView) findViewById(R.id.listView);
+        final ArrayAdapter<String> mAdapter = new ArrayAdapter<String>(this, R.layout.listview_row_layout);
+        listView.setAdapter(mAdapter);
+
+        View rootView = getWindow().getDecorView().getRootView();
+        final ImageView emojiButton = (ImageView) findViewById(R.id.emoticonButton);
+
+        final EmojiconsPopup popup = new EmojiconsPopup(rootView, this, true);
+        popup.setSizeForSoftKeyboard();
+
+        popup.setOnDismissListener(new PopupWindow.OnDismissListener() {
+            @Override
+            public void onDismiss() {
+                changeEmojiKeyboardIcon(emojiButton, R.drawable.smiley);
+            }
+        });
+
+        // dismiss emoji popup
+        popup.setOnSoftKeyboardOpenCloseListener(new EmojiconsPopup.OnSoftKeyboardOpenCloseListener() {
+            @Override
+            public void onKeyboardOpen(int keyBoardHeight) {
+            }
+
+            @Override
+            public void onKeyboardClose() {
+                if(popup.isShowing())
+                    popup.dismiss();
+            }
+        });
+
+        // on emoji clicked
+        popup.setOnEmojiconClickedListener(new EmojiconGridView.OnEmojiconClickedListener() {
+            @Override
+            public void onEmojiconClicked(Emojicon emojicon) {
+                if (mMessageEditText == null || emojicon == null) {
+                    return;
+                }
+
+                int start = mMessageEditText.getSelectionStart();
+                int end = mMessageEditText.getSelectionEnd();
+                if (start < 0) {
+                    mMessageEditText.append(emojicon.getEmoji());
+                } else {
+                    mMessageEditText.getText().replace(Math.min(start, end),
+                            Math.max(start, end), emojicon.getEmoji(), 0,
+                            emojicon.getEmoji().length());
+                }
+            }
+        });
+
+        // on backspace clicked
+        popup.setOnEmojiconBackspaceClickedListener(new EmojiconsPopup.OnEmojiconBackspaceClickedListener() {
+            @Override
+            public void onEmojiconBackspaceClicked(View v) {
+                KeyEvent event = new KeyEvent(
+                        0, 0, 0, KeyEvent.KEYCODE_DEL, 0, 0, 0, 0, KeyEvent.KEYCODE_ENDCALL);
+                mMessageEditText.dispatchKeyEvent(event);
+            }
+        });
+
+        // To toggle between text keyboard and emoji keyboard keyboard(Popup)
+        emojiButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // If popup is not showing => emoji keyboard is not visible, we need to show it
+                if(!popup.isShowing()){
+                    //If keyboard is visible, simply show the emoji popup
+                    if(popup.isKeyBoardOpen()){
+                        popup.showAtBottom();
+                        changeEmojiKeyboardIcon(emojiButton, R.drawable.ic_action_keyboard);
+                    }
+                    //else, open the text keyboard first and immediately after that show the emoji popup
+                    else{
+                        mMessageEditText.setFocusableInTouchMode(true);
+                        mMessageEditText.requestFocus();
+                        popup.showAtBottomPending();
+                        final InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                        inputMethodManager.showSoftInput(mMessageEditText, InputMethodManager.SHOW_IMPLICIT);
+                        changeEmojiKeyboardIcon(emojiButton, R.drawable.ic_action_keyboard);
+                    }
+                }
+                //If popup is showing, simply dismiss it to show the undelying text keyboard
+                else{
+                    popup.dismiss();
+                }
+            }
+        });
 
         initChatHead();
     } // -- onCreate ends
@@ -508,6 +602,11 @@ public class MainActivity extends AppCompatActivity
         Intent intent = new Intent(getApplicationContext(), MainActivity.class);
         startActivity(intent);
         finish();
+    }
+
+    // emoticon
+    private void changeEmojiKeyboardIcon(ImageView iconToBeChanged, int drawableResourceId){
+        iconToBeChanged.setImageResource(drawableResourceId);
     }
 
     // reply from notification
