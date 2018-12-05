@@ -7,6 +7,8 @@
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.TYPE_APPLICATION_OVERLAY" />
+    <!--<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />-->
 
     <application
         android:allowBackup="true"
@@ -28,19 +30,6 @@
         </activity>
 
         <activity android:name="edu.sfsu.csc780.chathub.ui.SignInActivity" />
-
-        <activity
-            android:name="edu.sfsu.csc780.chathub.ui.NotificationActivity"
-            android:excludeFromRecents="true"
-            android:taskAffinity="">
-        </activity>
-
-        <service android:name="edu.sfsu.csc780.chathub.service.FCMService">
-            <intent-filter>
-                <action android:name="com.google.firebase.MESSAGING_EVENT"/>
-            </intent-filter>
-        </service>
-
         <service android:name="edu.sfsu.csc780.chathub.service.ChatHeadService"
             android:enabled="true" />
 

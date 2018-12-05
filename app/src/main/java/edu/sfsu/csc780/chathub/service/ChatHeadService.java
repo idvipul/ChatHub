@@ -22,6 +22,9 @@ public class ChatHeadService extends Service {
     private View mChatHeadLayout;
     private WindowManager.LayoutParams mParams;
 
+    public ChatHeadService() {
+    }
+
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
@@ -34,6 +37,7 @@ public class ChatHeadService extends Service {
     public void onCreate() {
         super.onCreate();
 
+        //Inflate the chat head layout
         mChatHeadView = LayoutInflater.from(this).inflate(R.layout.chat_head, null);
 
         mParams = new WindowManager.LayoutParams(
@@ -49,21 +53,21 @@ public class ChatHeadService extends Service {
         mParams.x = 10;
         mParams.y = 150;
 
+        //Add the view to the window
         mWindowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
         mWindowManager.addView(mChatHeadView, mParams);
 
         mChatHeadLayout = mChatHeadView.findViewById(R.id.chat_head_layout);
 
+        //Drag and move chat head using user's touch action.
         ImageView chatHeadImage = (ImageView) mChatHeadView.findViewById(R.id.chat_head_image);
-
         chatHeadImage.setOnTouchListener(new View.OnTouchListener() {
 
             int initialX, initialY;
-            float touchX, touchY;
+            float initialTouchX, initialTouchY;
 
             @Override
             public boolean onTouch(View view, MotionEvent event) {
-
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN:
                         // initial positions
@@ -71,21 +75,22 @@ public class ChatHeadService extends Service {
                         initialY = mParams.y;
 
                         // touch locations
-                        touchX = event.getRawX();
-                        touchY = event.getRawY();
+                        initialTouchX = event.getRawX();
+                        initialTouchY = event.getRawY();
                         return true;
 
                     case MotionEvent.ACTION_MOVE:
-                        mParams.x = (int) (initialX + (event.getRawX() - touchX));
-                        mParams.y = (int) (initialY + (event.getRawY() - touchY));
+                        //Calculate the X and Y coordinates of the view.
+                        mParams.x = (int) (initialX + (event.getRawX() - initialTouchX));
+                        mParams.y = (int) (initialY + (int) (event.getRawY() - initialTouchY));
 
                         // update layout to the new location
                         mWindowManager.updateViewLayout(mChatHeadView, mParams);
                         return true;
 
                     case MotionEvent.ACTION_UP:
-                        int xClick = (int) (event.getRawX() - touchX);
-                        int yClick = (int) (event.getRawY() - touchY);
+                        int xClick = (int) (event.getRawX() - initialTouchX);
+                        int yClick = (int) (event.getRawY() - initialTouchY);
 
                         if (xClick < 10 && yClick < 10) {
                             if (mChatHeadLayout.getVisibility() == View.VISIBLE || mChatHeadLayout == null) {
@@ -98,7 +103,6 @@ public class ChatHeadService extends Service {
                 }
                 return false;
             }
-
         });
 
         // close chathead

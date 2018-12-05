@@ -30,7 +30,6 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.provider.Settings;
@@ -130,13 +129,7 @@ public class MainActivity extends AppCompatActivity
     private ImageButton mImageButton;
     private RelativeLayout mRelativeLayout;
 
-    // FCM
-    public DatabaseReference ref;
     public static boolean isPaused;
-    private Handler mHandler;
-    final Handler handler = new Handler();
-    private ProgressDialog mProgressDialog;
-
     private static final int REQUEST_PICK_IMAGE = 1;
     private static final int REQUEST_CAPTURE_IMAGE = 2;
     private static final int REQUEST_CAMERA_PERMISSION = 3;
@@ -160,57 +153,17 @@ public class MainActivity extends AppCompatActivity
 
         mRelativeLayout = (RelativeLayout) findViewById(R.id.setWallpaper);
 
-        // fcm
-        mHandler = new Handler();
-        ref = FirebaseDatabase.getInstance().getReference();
-        ref.child(MESSAGES_CHILD).limitToLast(1).addChildEventListener(new ChildEventListener() {
-            @Override
-            public void onChildAdded(final DataSnapshot snapshot, String s) {
-
-                if (isPaused) {
-                    mHandler.postAtTime(new Runnable() {
-                        @Override
-                        public void run() {
-                            String text = (String) snapshot.child("text").getValue();
-                            showNotification(text);
-                        }
-                    }, 3000);
-                }
-
-            }
-
-            @Override
-            public void onChildChanged(DataSnapshot snapshot, String s) {
-
-            }
-
-            @Override
-            public void onChildRemoved(DataSnapshot snapshot) {
-
-            }
-
-            @Override
-            public void onChildMoved(DataSnapshot snapshot, String s) {
-
-            }
-
-            @Override
-            public void onCancelled(DatabaseError error) {
-
-            }
-        });
-
         mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
 
         // get wallpaper path
-//        String wallpaperPath = mSharedPreferences.getString("wallpaperPath", null);
-//
-//        if (wallpaperPath != null) {
-//            Uri uri = Uri.parse(wallpaperPath);
-//            // get bitmap of the wallpaper
-//            Bitmap bitmap = ImageUtil.getBitmapForUri(this, uri);
-//            changeWallpaper(bitmap);
-//        }
+        String wallpaperPath = mSharedPreferences.getString("wallpaperPath", null);
+
+        if (wallpaperPath != null) {
+            Uri uri = Uri.parse(wallpaperPath);
+            // get bitmap of the wallpaper
+            Bitmap bitmap = ImageUtil.getBitmapForUri(this, uri);
+            changeWallpaper(bitmap);
+        }
 
         // Set default username is anonymous.
         mUsername = ANONYMOUS;
@@ -324,24 +277,6 @@ public class MainActivity extends AppCompatActivity
             }
         });
 
-        // push notification
-        // retrieve the intent that was used to launch this activity.
-        Intent intent = getIntent();
-
-        //get the string parameter called 'param' - set in showNotification()
-        String param = getMessagetext(intent);
-
-        if (param != null) {
-
-            // send the message to the mobile app
-            ChatMessage chatMessage = new
-                    ChatMessage(param,
-                    mUsername,
-                    mPhotoUrl);
-            MessageUtil.send(chatMessage);
-            mMessageEditText.setText("");
-        }
-
         // emoticons - referred an online tutorial
         ListView listView = (ListView) findViewById(R.id.listView);
         final ArrayAdapter<String> mAdapter = new ArrayAdapter<String>(this, R.layout.listview_row_layout);
@@ -444,6 +379,7 @@ public class MainActivity extends AppCompatActivity
     public void onResume() {
         super.onResume();
         isPaused = false;
+        stopService(new Intent(MainActivity.this, ChatHeadService.class));
         LocationUtils.startLocationUpdates(this);
     }
 
@@ -454,7 +390,9 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onBackPressed() {
-        startService(new Intent(MainActivity.this, ChatHeadService.class));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && Settings.canDrawOverlays(this)) {
+            startService(new Intent(MainActivity.this, ChatHeadService.class));
+        }
         super.onBackPressed();
 
     }
@@ -621,57 +559,6 @@ public class MainActivity extends AppCompatActivity
     // emoticon
     private void changeEmojiKeyboardIcon(ImageView iconToBeChanged, int drawableResourceId){
         iconToBeChanged.setImageResource(drawableResourceId);
-    }
-
-    // reply from notification
-    private String getMessagetext(Intent intent) {
-        Bundle remoteInput = RemoteInput.getResultsFromIntent(intent);
-        if (remoteInput != null) {
-            return (String) remoteInput.getCharSequence("message");
-        }
-        return null;
-    }
-
-    // referred a tutorial online
-    private void showNotification(String param) {
-        NotificationCompat.BigTextStyle bigStyle = new NotificationCompat.BigTextStyle();
-        bigStyle.bigText(param);
-        String replyLabel = getResources().getString(R.string.reply);
-
-        // This PendingIntent will be fired when the user taps on the notification in the status bar.
-
-        RemoteInput remoteInput = new RemoteInput.Builder("message")
-                .setLabel(replyLabel)
-                .build();
-
-        Intent replyIntent = new Intent(this, MainActivity.class);
-        PendingIntent replyPendingIntent = PendingIntent.getActivity(this, 0, replyIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-
-        replyIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP
-                | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-
-        NotificationCompat.Action action1 = new NotificationCompat.Action.Builder(R.drawable.ic_reply_back_48px,
-                getString(R.string.reply), replyPendingIntent)
-                .addRemoteInput(remoteInput).build();
-
-        List<NotificationCompat.Action> actions = new ArrayList<>();
-        actions.add(action1);
-
-        Notification notification = new NotificationCompat.Builder(this)
-                .setPriority(NotificationCompat.PRIORITY_MAX)
-                .setSmallIcon(R.mipmap.ic_launcher).setAutoCancel(true)
-                .setDefaults(Notification.DEFAULT_SOUND).setContentTitle("New Message Received!")
-                .setContentText(param)
-                .setStyle(bigStyle).build();
-
-        replyIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP
-                | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-
-        notification.flags |= Notification.FLAG_AUTO_CANCEL;
-        notification.contentIntent = replyPendingIntent;
-
-        NotificationManagerCompat mNotificationManager = NotificationManagerCompat.from(this);
-        mNotificationManager.notify(1, notification);
     }
 
     @Override
