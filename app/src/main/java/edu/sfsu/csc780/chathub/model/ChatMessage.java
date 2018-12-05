@@ -36,6 +36,9 @@ public class ChatMessage {
         this.photoUrl = photoUrl;
     }
 
+    public ChatMessage(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
     public String getText() {
         return text;
     }

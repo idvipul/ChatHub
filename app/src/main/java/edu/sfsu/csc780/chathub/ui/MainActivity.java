@@ -18,15 +18,20 @@ package edu.sfsu.csc780.chathub.ui;
 import android.Manifest;
 import android.app.Activity;
 import android.app.Notification;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -39,8 +44,6 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.app.NotificationCompat;
-import android.support.v4.app.NotificationManagerCompat;
-import android.support.v4.app.RemoteInput;
 import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.app.AppCompatDelegate;
@@ -76,17 +79,11 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.ChildEventListener;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
+
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
-import de.hdodenhof.circleimageview.CircleImageView;
 import edu.sfsu.csc780.chathub.R;
 import edu.sfsu.csc780.chathub.model.ChatMessage;
 import edu.sfsu.csc780.chathub.service.ChatHeadService;
@@ -120,6 +117,10 @@ public class MainActivity extends AppCompatActivity
     private ImageButton mCameraButton;
     private ImageButton mMicrophoneButton;
     public boolean isDayMode = true;
+    private SensorManager mSensorManager;
+    private float mCurrentAclValue; // current acceleration value and gravity
+    private float mLastAclValue; // last acceleration value and gravity
+    private float mShakeValue; // acceleration value differ from gravity
 
     // Firebase instance variables
     private FirebaseAuth mAuth;
@@ -248,6 +249,14 @@ public class MainActivity extends AppCompatActivity
 
         });
 
+        // sensor -- referred Youtube tutorial
+        mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        mSensorManager.registerListener(sensorListener, mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL);
+
+        mCurrentAclValue = SensorManager.GRAVITY_EARTH;
+        mLastAclValue = SensorManager.GRAVITY_EARTH;
+        mShakeValue = 0.00f;
+
         mLocationButton = (ImageButton) findViewById(R.id.locationButton);
         mLocationButton.setOnClickListener(new View.OnClickListener() {
 
@@ -373,12 +382,14 @@ public class MainActivity extends AppCompatActivity
     public void onPause() {
         super.onPause();
         isPaused = true;
+        mSensorManager.unregisterListener(sensorListener);
     }
 
     @Override
     public void onResume() {
         super.onResume();
         isPaused = false;
+        mSensorManager.registerListener(sensorListener, mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL);
         stopService(new Intent(MainActivity.this, ChatHeadService.class));
         LocationUtils.startLocationUpdates(this);
     }
@@ -390,11 +401,10 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onBackPressed() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && Settings.canDrawOverlays(this)) {
+        if (Build.VERSION.SDK_INT == Build.VERSION_CODES.N && Settings.canDrawOverlays(this)) {
             startService(new Intent(MainActivity.this, ChatHeadService.class));
         }
         super.onBackPressed();
-
     }
 
     @Override
@@ -465,6 +475,32 @@ public class MainActivity extends AppCompatActivity
                 });
         loader.forceLoad();
     }
+
+    // sensor
+    private final SensorEventListener sensorListener = new SensorEventListener() {
+        @Override
+        public void onSensorChanged(SensorEvent event) {
+            float x = event.values[0];
+            float y = event.values[1];
+            float z = event.values[2];
+
+            mLastAclValue = mCurrentAclValue;
+            mCurrentAclValue = (float) Math.sqrt((double) (x * x + y * y + z * z));
+            float delta = mCurrentAclValue - mLastAclValue;
+            mShakeValue = mShakeValue * 0.9f + delta;
+
+            if (mShakeValue > 24) {
+                ChatMessage text = new ChatMessage("Hi", mUsername, mPhotoUrl);
+                // send hi message on shake
+                MessageUtil.send(text);
+                }
+        }
+
+        @Override
+        public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+        }
+    };
 
     private void pickImage(int requestCode) {
         // ACTION_OPEN_DOCUMENT is the intent to choose a file via the system's file browser
