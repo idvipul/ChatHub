@@ -44,6 +44,7 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.app.AppCompatDelegate;
@@ -404,6 +405,9 @@ public class MainActivity extends AppCompatActivity
         if (Build.VERSION.SDK_INT == Build.VERSION_CODES.N && Settings.canDrawOverlays(this)) {
             startService(new Intent(MainActivity.this, ChatHeadService.class));
         }
+//        if (Build.VERSION.SDK_INT == Build.VERSION_CODES.O && Settings.canDrawOverlays(this)) {
+//            startForegroundService(new Intent(MainActivity.this, ChatHeadService.class));
+//        }
         super.onBackPressed();
     }
 

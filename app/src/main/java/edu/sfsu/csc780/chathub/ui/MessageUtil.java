@@ -1,6 +1,7 @@
 package edu.sfsu.csc780.chathub.ui;
 
 import android.app.Activity;
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.support.annotation.NonNull;
@@ -8,9 +9,13 @@ import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.format.DateUtils;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
@@ -52,6 +57,8 @@ public class MessageUtil {
         public TextView messengerTextView;
         public CircleImageView messengerImageView;
         public ImageView messageImageView;
+        public View singleMessageLayout;
+        public TextView timestampTextView;
 
         public MessageViewHolder(View v) {
             super(v);
@@ -60,6 +67,8 @@ public class MessageUtil {
             messengerImageView =
                     (CircleImageView) itemView.findViewById(R.id.messengerImageView);
             messageImageView = (ImageView) itemView.findViewById(R.id.messageImageView);
+            singleMessageLayout = (View) itemView.findViewById(R.id.singleMessageLayout);
+            timestampTextView = (TextView) itemView.findViewById(R.id.timestampTextView);
         }
     }
 
@@ -75,11 +84,11 @@ public class MessageUtil {
                 R.layout.item_message,
                 MessageViewHolder.class,
                 sFirebaseDatabaseReference.child(MESSAGES_CHILD)) {
+
             @Override
             protected void populateViewHolder(final MessageViewHolder viewHolder,
                                               ChatMessage chatMessage, int position) {
                 sAdapterListener.onLoadComplete();
-
                 viewHolder.messageTextView.setText(chatMessage.getText());
                 viewHolder.messengerTextView.setText(chatMessage.getName());
                 if (chatMessage.getPhotoUrl() == null) {
@@ -130,6 +139,16 @@ public class MessageUtil {
                     viewHolder.messageImageView.setVisibility(View.GONE);
                     viewHolder.messageTextView.setVisibility(View.VISIBLE);
                 }
+
+                // add timestamp
+                long timestamp = chatMessage.getTimestamp();
+                if (timestamp == 0 || timestamp == ChatMessage.NO_TIMESTAMP) {
+                    viewHolder.timestampTextView.setVisibility(View.GONE);
+                } else {
+                    viewHolder.timestampTextView.setText(getTimeStamp(activity,
+                            timestamp));
+                    viewHolder.timestampTextView.setVisibility(View.VISIBLE);
+                }
             }
         };
 
@@ -147,6 +166,14 @@ public class MessageUtil {
             }
         });
         return adapter;
+    }
+
+    // return timestamp
+    private static String getTimeStamp(Context context, long timestamp) {
+        return DateUtils.getRelativeDateTimeString(context, timestamp,
+                DateUtils.MINUTE_IN_MILLIS,
+                DateUtils.DAY_IN_MILLIS,
+                DateUtils.FORMAT_ABBREV_RELATIVE).toString();
     }
 
     public static StorageReference getImageStorageReference(FirebaseUser user, Uri uri) {

@@ -15,30 +15,41 @@
  */
 package edu.sfsu.csc780.chathub.model;
 
+import java.util.Date;
+
 public class ChatMessage {
 
     private String text;
     private String name;
     private String photoUrl;
     private String imageUrl;
+    private long timestamp;
 
     public ChatMessage() {
+        this.timestamp = new Date().getTime();
     }
 
     public ChatMessage(String text, String name, String photoUrl, String imageUrl) {
         this(text, name, photoUrl);
         this.imageUrl = imageUrl;
+        this.timestamp = new Date().getTime();
     }
 
     public ChatMessage(String text, String name, String photoUrl) {
         this.text = text;
         this.name = name;
         this.photoUrl = photoUrl;
+        this.timestamp = new Date().getTime();
     }
 
     public ChatMessage(String imageUrl) {
         this.imageUrl = imageUrl;
+        this.timestamp = new Date().getTime();
     }
+
+    public static final long NO_TIMESTAMP = -1;
+
+
     public String getText() {
         return text;
     }
@@ -65,5 +76,9 @@ public class ChatMessage {
 
     public String getImageUrl() {
         return imageUrl;
+    }
+
+    public long getTimestamp() {
+        return timestamp;
     }
 }
