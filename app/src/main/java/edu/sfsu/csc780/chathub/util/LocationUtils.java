@@ -1,4 +1,4 @@
-package edu.sfsu.csc780.chathub.ui;
+package edu.sfsu.csc780.chathub.util;
 
 import android.Manifest;
 import android.app.Activity;
@@ -36,7 +36,7 @@ public class LocationUtils {
 
         // Acquire a reference to the system Location Manager
         LocationManager locationManager =
-                (LocationManager)activity.getSystemService(Context.LOCATION_SERVICE);
+                (LocationManager) activity.getSystemService(Context.LOCATION_SERVICE);
 
         if (sLocationListener == null) {
             // Define a listener that responds to location updates
@@ -46,16 +46,22 @@ public class LocationUtils {
                             + " lon: " + location.getLongitude());
                     sLocation = location;
                 }
+
                 public void onStatusChanged(String provider, int status, Bundle
-                        extras) { }
-                public void onProviderEnabled(String provider) { }
-                public void onProviderDisabled(String provider) { }
+                        extras) {
+                }
+
+                public void onProviderEnabled(String provider) {
+                }
+
+                public void onProviderDisabled(String provider) {
+                }
             };
         }
 
         if (ActivityCompat.checkSelfPermission(activity, FINE_LOCATION) !=
                 GRANTED && ActivityCompat.checkSelfPermission(activity,
-                COARSE_LOCATION) != GRANTED ) {
+                COARSE_LOCATION) != GRANTED) {
             Log.d(LOG_TAG, "requesting permissions for starting");
             ActivityCompat.requestPermissions(activity, LOCATION_PERMISSIONS, REQUEST_CODE);
             return;
@@ -74,6 +80,5 @@ public class LocationUtils {
         Log.d(LOG_TAG, "requesting updates");
         locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, MIN_TIME,
                 MIN_DISTANCE, sLocationListener);
-
     }
 }

@@ -22,7 +22,6 @@ public class NotificationService extends FirebaseMessagingService {
 
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
-
         /* There are two types of messages data messages and notification messages. Data messages
         are handled here in onMessageReceived whether the app is in the foreground or background.
         Data messages are the type traditionally used with GCM. Notification messages are only
@@ -61,5 +60,4 @@ public class NotificationService extends FirebaseMessagingService {
 
         notificationManager.notify(1, notificationBuilder.build());
     }
-
 }

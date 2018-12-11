@@ -1,4 +1,4 @@
-package edu.sfsu.csc780.chathub.ui;
+package edu.sfsu.csc780.chathub.util;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -12,8 +12,6 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-
-import edu.sfsu.csc780.chathub.R;
 
 public class MapLoader extends AsyncTaskLoader<Bitmap> {
 

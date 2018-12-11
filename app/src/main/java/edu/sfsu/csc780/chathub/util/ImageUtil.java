@@ -1,4 +1,4 @@
-package edu.sfsu.csc780.chathub.ui;
+package edu.sfsu.csc780.chathub.util;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -32,7 +32,7 @@ public class ImageUtil {
         return imageFile;
     }
 
-    static Uri savePhotoImage(Context context, Bitmap imageBitmap) {
+    public static Uri savePhotoImage(Context context, Bitmap imageBitmap) {
         File photoFile = null;
         try {
             photoFile = createImageFile(context);
@@ -58,7 +58,7 @@ public class ImageUtil {
     public static Bitmap scaleImage(Bitmap bitmap) {
         int originalHeight = bitmap.getHeight();
         int originalWidth = bitmap.getWidth();
-        double scaleFactor =  MAX_LINEAR_DIMENSION / (double)(originalHeight + originalWidth);
+        double scaleFactor = MAX_LINEAR_DIMENSION / (double) (originalHeight + originalWidth);
         // We only want to scale down images, not scale upwards
         if (scaleFactor < 1.0) {
             int targetWidth = (int) Math.round(originalWidth * scaleFactor);
@@ -69,7 +69,7 @@ public class ImageUtil {
         }
     }
 
-    static Bitmap getBitmapForUri(Context context, Uri imageUri) {
+    public static Bitmap getBitmapForUri(Context context, Uri imageUri) {
         Bitmap bitmap = null;
         try {
             bitmap = MediaStore.Images.Media.getBitmap(context.getContentResolver(), imageUri);

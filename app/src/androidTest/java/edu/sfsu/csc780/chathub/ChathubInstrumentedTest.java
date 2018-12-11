@@ -8,7 +8,7 @@ import android.support.test.InstrumentationRegistry;
 import org.junit.Before;
 import org.junit.Test;
 
-import edu.sfsu.csc780.chathub.ui.ImageUtil;
+import edu.sfsu.csc780.chathub.util.ImageUtil;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;

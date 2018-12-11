@@ -22,9 +22,6 @@ public class ChatHeadService extends Service {
     private View mChatHeadLayout;
     private WindowManager.LayoutParams mParams;
 
-    public ChatHeadService() {
-    }
-
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
@@ -36,8 +33,7 @@ public class ChatHeadService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-
-        //Inflate the chat head layout
+        // inflate the chat head layout
         mChatHeadView = LayoutInflater.from(this).inflate(R.layout.chat_head, null);
 
         mParams = new WindowManager.LayoutParams(
@@ -59,7 +55,7 @@ public class ChatHeadService extends Service {
 
         mChatHeadLayout = mChatHeadView.findViewById(R.id.chat_head_layout);
 
-        //Drag and move chat head using user's touch action.
+        // drag and move chat head using user's touch action.
         ImageView chatHeadImage = (ImageView) mChatHeadView.findViewById(R.id.chat_head_image);
         chatHeadImage.setOnTouchListener(new View.OnTouchListener() {
 
@@ -80,7 +76,7 @@ public class ChatHeadService extends Service {
                         return true;
 
                     case MotionEvent.ACTION_MOVE:
-                        //Calculate the X and Y coordinates of the view.
+                        // calculate the X and Y coordinates of the view.
                         mParams.x = (int) (initialX + (event.getRawX() - initialTouchX));
                         mParams.y = (int) (initialY + (int) (event.getRawY() - initialTouchY));
 
@@ -94,11 +90,10 @@ public class ChatHeadService extends Service {
 
                         if (xClick < 10 && yClick < 10) {
                             if (mChatHeadLayout.getVisibility() == View.VISIBLE || mChatHeadLayout == null) {
-                                // start chat hub app - on click event
+                                // start chatHub app - on click event
                                 startChatApp(view);
                             }
                         }
-
                         return true;
                 }
                 return false;
@@ -113,7 +108,6 @@ public class ChatHeadService extends Service {
                 stopSelf();
             }
         });
-
     }
 
     public void startChatApp(View view) {

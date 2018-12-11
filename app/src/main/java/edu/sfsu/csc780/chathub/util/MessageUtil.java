@@ -1,4 +1,4 @@
-package edu.sfsu.csc780.chathub.ui;
+package edu.sfsu.csc780.chathub.util;
 
 import android.app.Activity;
 import android.content.Context;
@@ -11,11 +11,8 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.format.DateUtils;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
@@ -46,7 +43,9 @@ public class MessageUtil {
     private static FirebaseAuth sFirebaseAuth;
     private static FirebaseStorage sStorage = FirebaseStorage.getInstance();
 
-    public interface MessageLoadListener { public void onLoadComplete(); }
+    public interface MessageLoadListener {
+        public void onLoadComplete();
+    }
 
     public static void send(ChatMessage chatMessage) {
         sFirebaseDatabaseReference.child(MESSAGES_CHILD).push().setValue(chatMessage);
@@ -134,7 +133,8 @@ public class MessageUtil {
                     } catch (IllegalArgumentException e) {
                         viewHolder.messageTextView.setText("Error loading image");
                         Log.e(LOG_TAG, e.getMessage() + " : " + chatMessage.getImageUrl());
-                    }                } else {
+                    }
+                } else {
                     //Set view visibilities for a text message
                     viewHolder.messageImageView.setVisibility(View.GONE);
                     viewHolder.messageTextView.setVisibility(View.VISIBLE);
@@ -169,7 +169,7 @@ public class MessageUtil {
     }
 
     // return timestamp
-    private static String getTimeStamp(Context context, long timestamp) {
+    public static String getTimeStamp(Context context, long timestamp) {
         return DateUtils.getRelativeDateTimeString(context, timestamp,
                 DateUtils.MINUTE_IN_MILLIS,
                 DateUtils.DAY_IN_MILLIS,

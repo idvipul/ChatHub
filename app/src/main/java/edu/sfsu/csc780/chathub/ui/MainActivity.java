@@ -22,12 +22,9 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.net.Uri;
 import android.os.Build;
@@ -76,41 +73,50 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Locale;
+
 import edu.sfsu.csc780.chathub.R;
 import edu.sfsu.csc780.chathub.model.ChatMessage;
 import edu.sfsu.csc780.chathub.service.ChatHeadService;
 
+import edu.sfsu.csc780.chathub.util.ImageUtil;
+import edu.sfsu.csc780.chathub.util.LocationUtils;
+import edu.sfsu.csc780.chathub.util.MapLoader;
+import edu.sfsu.csc780.chathub.util.MessageUtil;
+import edu.sfsu.csc780.chathub.util.ShakeDetector;
+import edu.sfsu.csc780.chathub.util.ThemeLoader;
 import hani.momanii.supernova_emoji_library.Helper.EmojiconGridView;
 import hani.momanii.supernova_emoji_library.Helper.EmojiconsPopup;
 import hani.momanii.supernova_emoji_library.emoji.Emojicon;
 
-import static edu.sfsu.csc780.chathub.ui.ImageUtil.savePhotoImage;
+import static edu.sfsu.csc780.chathub.util.ImageUtil.getBitmapForUri;
+import static edu.sfsu.csc780.chathub.util.ImageUtil.savePhotoImage;
 
 public class MainActivity extends AppCompatActivity
         implements GoogleApiClient.OnConnectionFailedListener,
         MessageUtil.MessageLoadListener {
 
     private static final String TAG = "MainActivity";
-    public static final String MESSAGES_CHILD = "messages";
-    private static final int REQUEST_INVITE = 1;
     public static final int MSG_LENGTH_LIMIT = 100;
     public static final String ANONYMOUS = "anonymous";
     private String mUsername;
     private String mPhotoUrl;
-    private SharedPreferences mSharedPreferences;
+    public SharedPreferences mSharedPreferences;
     private GoogleApiClient mGoogleApiClient;
 
     private FloatingActionButton mSendButton;
     private RecyclerView mMessageRecyclerView;
-    private LinearLayoutManager mLinearLayoutManager;
+    public LinearLayoutManager mLinearLayoutManager;
     private ProgressBar mProgressBar;
     private EditText mMessageEditText;
     private ImageButton mLocationButton;
-    private ImageButton mCameraButton;
-    private ImageButton mMicrophoneButton;
+    public ImageButton mCameraButton;
+    public ImageButton mMicrophoneButton;
     public boolean isDayMode = true;
+
+    // Used for the shake detection
     private SensorManager mSensorManager;
     private Sensor mAccelerometer;
     private ShakeDetector mShakeDetector;
@@ -119,8 +125,8 @@ public class MainActivity extends AppCompatActivity
     private FirebaseAuth mAuth;
     private FirebaseUser mUser;
 
-    private FirebaseRecyclerAdapter<ChatMessage, MessageUtil.MessageViewHolder> mFirebaseAdapter;
-    private ImageButton mImageButton;
+    public FirebaseRecyclerAdapter<ChatMessage, MessageUtil.MessageViewHolder> mFirebaseAdapter;
+    public ImageButton mImageButton;
     private RelativeLayout mRelativeLayout;
 
     public static boolean isPaused;
@@ -130,7 +136,6 @@ public class MainActivity extends AppCompatActivity
     private static final int REQUEST_MICROPHONE_PERMISSION = 4;
     private static final int REQUEST_CHANGE_WALLPAPER = 5;
     private static final int REQUEST_CHATHEAD_PERMISSION = 6;
-    private double MAX_LINEAR_DIMENSION = 500.0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -239,7 +244,6 @@ public class MainActivity extends AppCompatActivity
             public void onClick(View v) {
                 pickImage(REQUEST_PICK_IMAGE);
             }
-
         });
 
         // shake detector initialization -- referred a tutorial online
@@ -254,7 +258,6 @@ public class MainActivity extends AppCompatActivity
                 ChatMessage text = new ChatMessage("Hi", mUsername, mPhotoUrl);
                 // send hi message on shake
                 MessageUtil.send(text);
-
             }
         });
 
@@ -303,14 +306,14 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void onDismiss() {
                 if (isDayMode) {
-                    changeEmojiKeyboardIcon(emoticonButton, R.drawable.ic_smiley_black);
+                    changeEmoticonsKeyboard(emoticonButton, R.drawable.ic_smiley_black);
                 } else {
-                    changeEmojiKeyboardIcon(emoticonButton, R.drawable.ic_smiley_white);
+                    changeEmoticonsKeyboard(emoticonButton, R.drawable.ic_smiley_white);
                 }
             }
         });
 
-        // dismiss emoji popup
+        // dismiss emoticons popup
         popup.setOnSoftKeyboardOpenCloseListener(new EmojiconsPopup.OnSoftKeyboardOpenCloseListener() {
             @Override
             public void onKeyboardOpen(int keyBoardHeight) {
@@ -318,12 +321,12 @@ public class MainActivity extends AppCompatActivity
 
             @Override
             public void onKeyboardClose() {
-                if(popup.isShowing())
+                if (popup.isShowing())
                     popup.dismiss();
             }
         });
 
-        // on emoji clicked
+        // on emoticons clicked
         popup.setOnEmojiconClickedListener(new EmojiconGridView.OnEmojiconClickedListener() {
             @Override
             public void onEmojiconClicked(Emojicon emojicon) {
@@ -353,7 +356,7 @@ public class MainActivity extends AppCompatActivity
             }
         });
 
-        // To toggle between text keyboard and emoji keyboard keyboard(Popup)
+        // toggle between text keyboard and emoticon keyboard
         emoticonButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -391,7 +394,7 @@ public class MainActivity extends AppCompatActivity
     public void onResume() {
         super.onResume();
         isPaused = false;
-        mSensorManager.registerListener(mShakeDetector, mAccelerometer,	SensorManager.SENSOR_DELAY_UI);
+        mSensorManager.registerListener(mShakeDetector, mAccelerometer, SensorManager.SENSOR_DELAY_UI);
         stopService(new Intent(MainActivity.this, ChatHeadService.class));
         LocationUtils.startLocationUpdates(this);
     }
@@ -435,7 +438,10 @@ public class MainActivity extends AppCompatActivity
                 startActivity(new Intent(this, SignInActivity.class));
                 return true;
             case R.id.day_night_mode:
-                changeMode();
+                ThemeLoader.changeMode(this);
+                Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+                startActivity(intent);
+                finish();
                 return true;
             case R.id.change_wallpaper:
                 pickImage(REQUEST_CHANGE_WALLPAPER);
@@ -505,7 +511,6 @@ public class MainActivity extends AppCompatActivity
 
     // microphone
     private void getSpeechInput() {
-
         if ((ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)) {
             // prompt the user for speech and send it through a speech recognizer
             Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
@@ -524,55 +529,37 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    // day/night mode -- referred YouTube tutorials
-    private void changeMode() {
-        if (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_NO || AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_AUTO || AppCompatDelegate.getDefaultNightMode() == -1) {
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
-            Toast.makeText(this, "Changed to Night Mode", Toast.LENGTH_SHORT).show();
-        } else {
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
-            Toast.makeText(this, "Changed to Day Mode", Toast.LENGTH_SHORT).show();
-        }
-        Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-        startActivity(intent);
-        finish();
-    }
-
-    // popup emoji keyboard
+    // popup emoticon keyboard
     private void popUpKeyboard(EmojiconsPopup popup, ImageView emoticonButton) {
         // If popup is not showing => emoji keyboard is not visible, we need to show it
-        if(!popup.isShowing()){
+        if (!popup.isShowing()) {
             //If keyboard is visible, simply show the emoji popup
-            if(popup.isKeyBoardOpen()){
+            if (popup.isKeyBoardOpen()) {
                 popup.showAtBottom();
-                  if (isDayMode) {
-                    changeEmojiKeyboardIcon(emoticonButton, R.drawable.ic_keyboard_black);
-                  } else {
-                      changeEmojiKeyboardIcon(emoticonButton, R.drawable.ic_keyboard_white);
-                  }
-            }
-            //else, open the text keyboard first and immediately after that show the emoji popup
-            else{
+                if (isDayMode) {
+                    changeEmoticonsKeyboard(emoticonButton, R.drawable.ic_keyboard_black);
+                } else {
+                    changeEmoticonsKeyboard(emoticonButton, R.drawable.ic_keyboard_white);
+                }
+            } else {
                 mMessageEditText.setFocusableInTouchMode(true);
                 mMessageEditText.requestFocus();
                 popup.showAtBottomPending();
                 final InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
                 inputMethodManager.showSoftInput(mMessageEditText, InputMethodManager.SHOW_IMPLICIT);
                 if (isDayMode) {
-                    changeEmojiKeyboardIcon(emoticonButton, R.drawable.ic_keyboard_black);
+                    changeEmoticonsKeyboard(emoticonButton, R.drawable.ic_keyboard_black);
                 } else {
-                    changeEmojiKeyboardIcon(emoticonButton, R.drawable.ic_keyboard_white);
+                    changeEmoticonsKeyboard(emoticonButton, R.drawable.ic_keyboard_white);
                 }
             }
-        }
-        //If popup is showing, simply dismiss it to show the undelying text keyboard
-        else{
+        } else {
             popup.dismiss();
         }
     }
 
     // emoticon
-    private void changeEmojiKeyboardIcon(ImageView iconToBeChanged, int drawableResourceId){
+    private void changeEmoticonsKeyboard(ImageView iconToBeChanged, int drawableResourceId) {
         iconToBeChanged.setImageResource(drawableResourceId);
     }
 
@@ -616,23 +603,22 @@ public class MainActivity extends AppCompatActivity
         Log.d(TAG, "onActivityResult: request=" + requestCode + ", result=" + resultCode);
 
         if (requestCode == REQUEST_PICK_IMAGE && resultCode == Activity.RESULT_OK) {
-            // Process selected image here
-            // The document selected by the user won't be returned in the intent.
-            // Instead, a URI to that document will be contained in the return intent
-            // provided to this method as a parameter.
-            // Pull that URI using resultData.getData().
+            /* Process selected image here
+             The document selected by the user won't be returned in the intent.
+             Instead, a URI to that document will be contained in the return intent
+             provided to this method as a parameter.
+             Pull that URI using resultData.getData().*/
             if (data != null) {
 
                 Uri uri = data.getData();
                 Log.i(TAG, "Uri: " + uri.toString());
                 // Resize if too big for messaging
-                Bitmap bitmap = ImageUtil.getBitmapForUri(this, uri);
+                Bitmap bitmap = getBitmapForUri(this, uri);
                 Bitmap resizedBitmap = ImageUtil.scaleImage(bitmap);
                 if (bitmap != resizedBitmap) {
                     uri = savePhotoImage(this, resizedBitmap);
                 }
                 createImageMessage(uri);
-
             } else {
                 Log.e(TAG, "Cannot get image for uploading");
             }
@@ -652,7 +638,6 @@ public class MainActivity extends AppCompatActivity
 
         // microphone
         if (requestCode == REQUEST_MICROPHONE_PERMISSION && resultCode == Activity.RESULT_OK) {
-
             if (data != null) {
                 // get audio & store it in ArrayList of Strings
                 ArrayList<String> audio = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
@@ -668,10 +653,9 @@ public class MainActivity extends AppCompatActivity
 
         // change wallpaper
         if (requestCode == REQUEST_CHANGE_WALLPAPER && resultCode == Activity.RESULT_OK) {
-
             if (data != null) {
                 Uri uri = data.getData();
-                Bitmap bitmap = ImageUtil.getBitmapForUri(this, uri);
+                Bitmap bitmap = getBitmapForUri(this, uri);
                 SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
                 SharedPreferences.Editor editor = sharedPreferences.edit();
                 editor.putString("wallpaperPath", uri.toString());
@@ -682,10 +666,9 @@ public class MainActivity extends AppCompatActivity
 
         // chathead
         if (requestCode == REQUEST_CHATHEAD_PERMISSION && resultCode == Activity.RESULT_OK) {
-            Toast.makeText(this, "Overlay permission not granted. Closing the application", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Overlay permission not granted", Toast.LENGTH_SHORT).show();
             finish();
         }
-
     }
 
     // change wallpaper

@@ -26,5 +26,4 @@ public class NotificationActivity extends Activity {
         PendingIntent dismissIntent = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_CANCEL_CURRENT);
         return dismissIntent;
     }
-
 }

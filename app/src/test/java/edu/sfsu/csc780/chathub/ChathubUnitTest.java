@@ -11,7 +11,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.File;
 
-import edu.sfsu.csc780.chathub.ui.ImageUtil;
+import edu.sfsu.csc780.chathub.util.ImageUtil;
 
 import static junit.framework.Assert.assertTrue;
 import static org.mockito.Mockito.when;
