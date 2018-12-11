@@ -17,9 +17,6 @@ package edu.sfsu.csc780.chathub.ui;
 
 import android.Manifest;
 import android.app.Activity;
-import android.app.Notification;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -43,8 +40,6 @@ import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.LoaderManager;
-import android.support.v4.app.NotificationCompat;
-import android.support.v4.content.ContextCompat;
 import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.app.AppCompatDelegate;
@@ -65,11 +60,9 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ListView;
-import android.widget.PopupMenu;
 import android.widget.PopupWindow;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.firebase.ui.database.FirebaseRecyclerAdapter;
@@ -119,9 +112,8 @@ public class MainActivity extends AppCompatActivity
     private ImageButton mMicrophoneButton;
     public boolean isDayMode = true;
     private SensorManager mSensorManager;
-    private float mCurrentAclValue; // current acceleration value and gravity
-    private float mLastAclValue; // last acceleration value and gravity
-    private float mShakeValue; // acceleration value differ from gravity
+    private Sensor mAccelerometer;
+    private ShakeDetector mShakeDetector;
 
     // Firebase instance variables
     private FirebaseAuth mAuth;
@@ -250,14 +242,23 @@ public class MainActivity extends AppCompatActivity
 
         });
 
-        // sensor -- referred Youtube tutorial
+        // shake detector initialization -- referred a tutorial online
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        mSensorManager.registerListener(sensorListener, mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL);
+        mAccelerometer = mSensorManager
+                .getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        mShakeDetector = new ShakeDetector();
+        mShakeDetector.setOnShakeListener(new ShakeDetector.OnShakeListener() {
 
-        mCurrentAclValue = SensorManager.GRAVITY_EARTH;
-        mLastAclValue = SensorManager.GRAVITY_EARTH;
-        mShakeValue = 0.00f;
+            @Override
+            public void onShake(int count) {
+                ChatMessage text = new ChatMessage("Hi", mUsername, mPhotoUrl);
+                // send hi message on shake
+                MessageUtil.send(text);
 
+            }
+        });
+
+        // location
         mLocationButton = (ImageButton) findViewById(R.id.locationButton);
         mLocationButton.setOnClickListener(new View.OnClickListener() {
 
@@ -383,14 +384,14 @@ public class MainActivity extends AppCompatActivity
     public void onPause() {
         super.onPause();
         isPaused = true;
-        mSensorManager.unregisterListener(sensorListener);
+        mSensorManager.unregisterListener(mShakeDetector);
     }
 
     @Override
     public void onResume() {
         super.onResume();
         isPaused = false;
-        mSensorManager.registerListener(sensorListener, mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL);
+        mSensorManager.registerListener(mShakeDetector, mAccelerometer,	SensorManager.SENSOR_DELAY_UI);
         stopService(new Intent(MainActivity.this, ChatHeadService.class));
         LocationUtils.startLocationUpdates(this);
     }
@@ -479,32 +480,6 @@ public class MainActivity extends AppCompatActivity
                 });
         loader.forceLoad();
     }
-
-    // sensor
-    private final SensorEventListener sensorListener = new SensorEventListener() {
-        @Override
-        public void onSensorChanged(SensorEvent event) {
-            float x = event.values[0];
-            float y = event.values[1];
-            float z = event.values[2];
-
-            mLastAclValue = mCurrentAclValue;
-            mCurrentAclValue = (float) Math.sqrt((double) (x * x + y * y + z * z));
-            float delta = mCurrentAclValue - mLastAclValue;
-            mShakeValue = mShakeValue * 0.9f + delta;
-
-            if (mShakeValue > 24) {
-                ChatMessage text = new ChatMessage("Hi", mUsername, mPhotoUrl);
-                // send hi message on shake
-                MessageUtil.send(text);
-                }
-        }
-
-        @Override
-        public void onAccuracyChanged(Sensor sensor, int accuracy) {
-
-        }
-    };
 
     private void pickImage(int requestCode) {
         // ACTION_OPEN_DOCUMENT is the intent to choose a file via the system's file browser
