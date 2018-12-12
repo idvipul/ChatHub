@@ -17,6 +17,7 @@ package edu.sfsu.csc780.chathub.ui;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -29,6 +30,7 @@ import android.hardware.SensorManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.provider.Settings;
@@ -70,10 +72,14 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.ChildEventListener;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Locale;
 
@@ -91,6 +97,7 @@ import hani.momanii.supernova_emoji_library.Helper.EmojiconGridView;
 import hani.momanii.supernova_emoji_library.Helper.EmojiconsPopup;
 import hani.momanii.supernova_emoji_library.emoji.Emojicon;
 
+import static edu.sfsu.csc780.chathub.util.NotificationBuilder.showNotification;
 import static edu.sfsu.csc780.chathub.util.ImageUtil.getBitmapForUri;
 import static edu.sfsu.csc780.chathub.util.ImageUtil.savePhotoImage;
 
@@ -99,6 +106,7 @@ public class MainActivity extends AppCompatActivity
         MessageUtil.MessageLoadListener {
 
     private static final String TAG = "MainActivity";
+    public static final String MESSAGES_CHILD = "messages";
     public static final int MSG_LENGTH_LIMIT = 100;
     public static final String ANONYMOUS = "anonymous";
     private String mUsername;
@@ -121,6 +129,13 @@ public class MainActivity extends AppCompatActivity
     private Sensor mAccelerometer;
     private ShakeDetector mShakeDetector;
 
+    // Firebase Cloud Messaging
+    public DatabaseReference ref;
+    public static boolean isPaused;
+    private Handler mHandler;
+    final Handler handler = new Handler();
+    private ProgressDialog mProgressDialog;
+
     // Firebase instance variables
     private FirebaseAuth mAuth;
     private FirebaseUser mUser;
@@ -129,7 +144,6 @@ public class MainActivity extends AppCompatActivity
     public ImageButton mImageButton;
     private RelativeLayout mRelativeLayout;
 
-    public static boolean isPaused;
     private static final int REQUEST_PICK_IMAGE = 1;
     private static final int REQUEST_CAPTURE_IMAGE = 2;
     private static final int REQUEST_CAMERA_PERMISSION = 3;
@@ -149,6 +163,40 @@ public class MainActivity extends AppCompatActivity
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // push notification using fcm -- referred a tutorial online
+        mHandler = new Handler();
+        ref = FirebaseDatabase.getInstance().getReference();
+        ref.child(MESSAGES_CHILD).limitToLast(1).addChildEventListener(new ChildEventListener() {
+            @Override
+            public void onChildAdded(final DataSnapshot snapshot, String s) {
+                if (isPaused) {
+                    mHandler.postAtTime(new Runnable() {
+                        @Override
+                        public void run() {
+                            String message = (String) snapshot.child(MESSAGES_CHILD).getValue();
+                            showNotification(MainActivity.this, message);
+                        }
+                    }, 3000);
+                }
+            }
+
+            @Override
+            public void onChildChanged(DataSnapshot snapshot, String s) {
+            }
+
+            @Override
+            public void onChildRemoved(DataSnapshot snapshot) {
+            }
+
+            @Override
+            public void onChildMoved(DataSnapshot snapshot, String s) {
+            }
+
+            @Override
+            public void onCancelled(DatabaseError error) {
+            }
+        });
 
         mRelativeLayout = (RelativeLayout) findViewById(R.id.setWallpaper);
 
@@ -255,9 +303,9 @@ public class MainActivity extends AppCompatActivity
 
             @Override
             public void onShake(int count) {
-                ChatMessage text = new ChatMessage("Hi", mUsername, mPhotoUrl);
+                ChatMessage message = new ChatMessage("Hi", mUsername, mPhotoUrl);
                 // send hi message on shake
-                MessageUtil.send(text);
+                MessageUtil.send(message);
             }
         });
 
@@ -409,9 +457,6 @@ public class MainActivity extends AppCompatActivity
         if (Build.VERSION.SDK_INT == Build.VERSION_CODES.N && Settings.canDrawOverlays(this)) {
             startService(new Intent(MainActivity.this, ChatHeadService.class));
         }
-//        if (Build.VERSION.SDK_INT == Build.VERSION_CODES.O && Settings.canDrawOverlays(this)) {
-//            startForegroundService(new Intent(MainActivity.this, ChatHeadService.class));
-//        }
         super.onBackPressed();
     }
 
@@ -642,10 +687,10 @@ public class MainActivity extends AppCompatActivity
                 // get audio & store it in ArrayList of Strings
                 ArrayList<String> audio = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
 
-                ChatMessage text = new ChatMessage(audio.get(0), mUsername, mPhotoUrl);
+                ChatMessage message = new ChatMessage(audio.get(0), mUsername, mPhotoUrl);
 
                 // send audio as a text message
-                MessageUtil.send(text);
+                MessageUtil.send(message);
             } else {
                 Log.e(TAG, "Cannot get an audio");
             }

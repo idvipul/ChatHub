@@ -2,6 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="edu.sfsu.csc780.chathub">
 
+    <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.CAMERA"/>
@@ -31,8 +32,29 @@
         </activity>
 
         <activity android:name="edu.sfsu.csc780.chathub.ui.SignInActivity" />
+
+        <activity
+            android:name="edu.sfsu.csc780.chathub.ui.NotificationActivity"
+            android:excludeFromRecents="true"
+            android:taskAffinity="">
+        </activity>
+
         <service android:name="edu.sfsu.csc780.chathub.service.ChatHeadService"
             android:enabled="true" />
+
+        <service
+            android:name="edu.sfsu.csc780.chathub.service.NotificationService">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT"/>
+            </intent-filter>
+        </service>
+
+        <service
+            android:name="edu.sfsu.csc780.chathub.service.MyFirebaseInstanceIdService">
+            <intent-filter>
+                <action android:name="com.google.firebase.INSTANCE_ID_EVENT"/>
+            </intent-filter>
+        </service>
 
     </application>
 
