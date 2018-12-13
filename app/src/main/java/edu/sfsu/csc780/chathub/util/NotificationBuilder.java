@@ -34,6 +34,7 @@ public class NotificationBuilder {
         Notification notification = new NotificationCompat.Builder(context)
                 .setPriority(NotificationCompat.PRIORITY_MAX)
                 .setSmallIcon(R.mipmap.ic_launcher).setAutoCancel(true)
+                .setDefaults(Notification.DEFAULT_SOUND)
                 .setContentTitle("New Message Received!").build();
 
         replyIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP

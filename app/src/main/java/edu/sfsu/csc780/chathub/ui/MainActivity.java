@@ -417,7 +417,7 @@ public class MainActivity extends AppCompatActivity
 
     private void initChatHead() {
         // enable user permission to start chathead service -- referred Youtube tutorial
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+        if (Build.VERSION.SDK_INT == Build.VERSION_CODES.N && !Settings.canDrawOverlays(this)) {
             Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                     Uri.parse("package:" + this.getPackageName()));
             startActivityForResult(intent, REQUEST_CHATHEAD_PERMISSION);

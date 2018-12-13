@@ -38,7 +38,6 @@ public class MapLoader extends AsyncTaskLoader<Bitmap> {
         urlBuilder.append(lat);
         urlBuilder.append(",");
         urlBuilder.append(lon);
-        urlBuilder.append("&key=AIzaSyC1-49pPnMsUT9CNaxb_wKoFL4UMRMpM0g");
         Log.d(LOG_TAG, "map url:" + urlBuilder.toString());
 
         Bitmap bmp = null;
